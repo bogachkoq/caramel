@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Питание+ | Полная система</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        .scroll-custom::-webkit-scrollbar { width: 4px; }
+        .scroll-custom::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .allergen-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        /* ===== TOAST УВЕДОМЛЕНИЯ ===== */
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            max-width: 340px;
+            width: 100%;
+        }
+        .toast {
+            pointer-events: auto;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px 20px;
+            border-radius: 16px;
+            color: #fff;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+            animation: toast-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+        .toast.toast-exit {
+            animation: toast-out 0.35s ease-in forwards;
+        }
+        .toast-success { background: linear-gradient(135deg, #16a34a, #15803d); }
+        .toast-error   { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+        .toast-warning { background: linear-gradient(135deg, #ea580c, #c2410c); }
+        .toast-info    { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .toast-body .toast-title {
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1.3;
+        }
+        .toast-body .toast-desc {
+            font-size: 12px;
+            opacity: 0.85;
+            margin-top: 2px;
+            font-weight: 600;
+        }
+        .toast-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.7);
+            font-size: 16px;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .toast-close:hover { color: #fff; }
+        /* progress bar */
+        .toast::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            height: 3px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 0 0 16px 16px;
+            animation: toast-bar 3s linear forwards;
+        }
+
+        @keyframes toast-in {
+            0%  { transform: translateX(120%); opacity: 0; }
+            100%{ transform: translateX(0);    opacity: 1; }
+        }
+        @keyframes toast-out {
+            0%  { transform: translateX(0);    opacity: 1; }
+            100%{ transform: translateX(120%); opacity: 0; }
+        }
+        @keyframes toast-bar {
+            0%   { width: 100%; }
+            100% { width: 0%;   }
+        }
+
+        /* ===== КУПЛЕНО ОВЕРЛЕЙ ===== */
+        .bought-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(22,163,74,0.95), rgba(21,128,61,0.97));
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: inherit;
+            animation: bought-fade-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .bought-overlay.fade-out {
+            animation: bought-fade-out 0.4s ease-in forwards;
+        }
+        @keyframes bought-fade-in {
+            0%  { opacity: 0; transform: scale(0.92); }
+            100%{ opacity: 1; transform: scale(1);    }
+        }
+        @keyframes bought-fade-out {
+            0%  { opacity: 1; transform: scale(1);    }
+            100%{ opacity: 0; transform: scale(0.96); }
+        }
+        .bought-overlay .check-icon {
+            width: 72px;
+            height: 72px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            animation: check-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s both;
+        }
+        .bought-overlay .check-icon i {
+            font-size: 32px;
+            color: #fff;
+        }
+        @keyframes check-pop {
+            0%   { transform: scale(0); }
+            60%  { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .bought-overlay .bought-text {
+            color: #fff;
+            font-size: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            animation: bought-text-in 0.4s ease 0.25s both;
+        }
+        .bought-overlay .bought-sub {
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 4px;
+            animation: bought-text-in 0.4s ease 0.35s both;
+        }
+        @keyframes bought-text-in {
+            0%   { opacity: 0; transform: translateY(8px); }
+            100% { opacity: 1; transform: translateY(0);   }
+        }
+
+        /* ===== КНОПКА LOADING ===== */
+        .btn-loading {
+            position: relative;
+            pointer-events: none !important;
+            opacity: 0.75 !important;
+        }
+        .btn-loading .btn-spinner {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-spinner-ring {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn-loading .btn-text { visibility: hidden; }
+
+        /* ===== ПОДТВЕРЖДЕНИЕ "Я поел(а)" ===== */
+        .eaten-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(37,99,235,0.95), rgba(29,78,216,0.97));
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            animation: bought-fade-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .eaten-overlay.fade-out {
+            animation: bought-fade-out 0.35s ease-in forwards;
+        }
+        .eaten-overlay i {
+            font-size: 28px;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .eaten-overlay span {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50" x-data="canteenApp()" x-init="init()">
+
+    <!-- ===== TOAST КОНТЕЙНЕР ===== -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ЭКРАН ВХОДА И РЕГИСТРАЦИИ -->
+    <template x-if="!user">
+        <div class="fixed inset-0 bg-gradient-to-br from-blue-700 via-blue-800 to-slate-900 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div class="bg-white p-8 md:p-10 rounded-[2rem] shadow-2xl w-full max-w-lg my-8 transition-all">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-2xl mb-4 shadow-lg shadow-blue-200">
+                        <i class="fas fa-utensils text-3xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-800 uppercase tracking-tighter">ПИТАНИЕ+</h2>
+                    <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mt-1" x-text="isRegistering ? 'Регистрация' : 'Авторизация'"></p>
+                </div>
+
+                <div class="flex gap-2 mb-6 bg-slate-100 p-1 rounded-2xl">
+                    <button @click="regData.role='student'" :class="regData.role=='student'?'bg-white shadow text-blue-600':''" class="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">Ученик</button>
+                    <button @click="regData.role='chef'" :class="regData.role=='chef'?'bg-white shadow text-blue-600':''" class="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">Повар</button>
+                    <button @click="regData.role='admin'" :class="regData.role=='admin'?'bg-white shadow text-blue-600':''" class="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">Админ</button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-4 top-4 text-slate-300"></i>
+                        <input type="text" x-model="regData.username" placeholder="Логин" class="w-full pl-12 p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all">
+                    </div>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-4 text-slate-300"></i>
+                        <input type="password" x-model="regData.password" placeholder="Пароль" class="w-full pl-12 p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all">
+                    </div>
+
+                    <template x-if="isRegistering">
+                        <div class="space-y-3 animate-fade-in">
+                            <template x-if="regData.role === 'admin'">
+                                <input type="password" x-model="regData.adminKey" placeholder="Секретный ключ ROOT-..." class="w-full p-4 bg-orange-50 border border-orange-200 rounded-2xl outline-none focus:border-orange-500 font-bold text-orange-700">
+                            </template>
+                            <input type="text" x-model="regData.fullName" placeholder="ФИО полностью" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 font-bold">
+                            <input type="tel" x-model="regData.phone" placeholder="Номер телефона" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 font-bold">
+
+                            <template x-if="regData.role !== 'student'">
+                                <input type="email" x-model="regData.email" placeholder="Электронная почта" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 font-bold">
+                            </template>
+
+                            <div class="flex gap-3 relative">
+                                <template x-if="regData.role == 'student'">
+                                    <input type="text" x-model="regData.grade" placeholder="Класс" class="w-1/3 p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 font-bold">
+                                </template>
+                                <div class="flex-1 relative" @click.away="showSchoolDropdown = false">
+                                    <input type="text" x-model="regData.school" @focus="showSchoolDropdown = true" @input="showSchoolDropdown = true" :placeholder="regData.role == 'student' ? 'Школа №' : 'Организация'" class="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500 font-bold transition-all">
+                                    <div x-show="showSchoolDropdown && filteredSchools.length > 0" class="absolute z-50 left-0 right-0 top-full mt-1 bg-white border rounded-2xl shadow-xl max-h-48 overflow-y-auto scroll-custom border-blue-100">
+                                        <template x-for="school in filteredSchools">
+                                            <div @click="regData.school = school; showSchoolDropdown = false" class="p-3 hover:bg-blue-50 cursor-pointer text-[11px] font-bold border-b last:border-0 border-slate-50 transition-colors" x-text="school"></div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <button @click="isRegistering ? register() : login()"
+                        :class="loginLoading ? 'btn-loading' : ''"
+                        class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase mt-8 shadow-xl hover:bg-blue-700 transition-all relative"
+                        x-text="isRegistering ? 'Создать аккаунт' : 'Войти'">
+                </button>
+                <template x-if="loginLoading">
+                    <div class="absolute inset-0 mt-8 h-[52px] flex items-center justify-center pointer-events-none">
+                        <div class="btn-spinner-ring"></div>
+                    </div>
+                </template>
+                <div class="text-center mt-6">
+                    <button @click="isRegistering = !isRegistering" class="text-slate-400 text-xs font-bold uppercase hover:text-blue-600">
+                        <span x-text="isRegistering ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Регистрация'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+    <div x-show="user" class="min-h-screen flex flex-col" x-cloak>
+        <header class="bg-white border-b p-4 px-8 flex justify-between items-center sticky top-0 z-40">
+            <div class="font-black text-2xl text-blue-800 flex items-center gap-2"><i class="fas fa-utensils"></i> ПИТАНИЕ+</div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <p class="text-[10px] font-black text-slate-400 uppercase leading-none" x-text="user?.school"></p>
+                    <p class="font-bold text-slate-700" x-text="user?.fullName"></p>
+                </div>
+                <span class="bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-[10px] font-black uppercase" x-text="user ? user.role : ''"></span>
+                <button @click="logout()" class="text-slate-300 hover:text-red-500 text-xl"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+
+        <div class="flex flex-1">
+            <nav class="w-72 bg-white border-r p-6 space-y-2 hidden lg:block">
+                <template x-for="item in navItems[user?.role]">
+                    <button @click="tab = item.id"
+                            :class="tab == item.id ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'"
+                            class="w-full flex items-center gap-3 p-4 rounded-2xl font-bold transition-all relative text-left">
+                        <i class="fas w-5" :class="item.icon"></i> <span x-text="item.name"></span>
+                        <template x-if="item.id == 'ad_staff' && users.filter(u => u.role == 'chef' && !u.isApproved).length > 0">
+                            <span class="absolute right-4 w-2 h-2 bg-orange-500 rounded-full"></span>
+                        </template>
+                        <template x-if="item.id == 'ad_approve' && purchases.filter(p => p.status == 'Ожидает').length > 0">
+                            <span class="absolute right-4 w-2 h-2 bg-orange-500 rounded-full"></span>
+                        </template>
+                        <template x-if="item.id.includes('notif') && filteredNotifications.length > 0">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </template>
+                    </button>
+                </template>
+            </nav>
+
+            <main class="flex-1 p-8 overflow-y-auto">
+
+                <!-- ВКЛАДКА АДМИНА: УПРАВЛЕНИЕ ПЕРСОНАЛОМ -->
+                <div x-show="tab == 'ad_staff'">
+                    <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Заявки от поваров</h2>
+                    <div class="space-y-4">
+                        <template x-for="chef in users.filter(u => u.role == 'chef' && !u.isApproved)">
+                            <div class="bg-white p-6 rounded-3xl border flex justify-between items-center shadow-sm border-l-8 border-blue-500">
+                                <div>
+                                    <b class="text-xl block" x-text="chef.fullName"></b>
+                                    <div class="flex gap-4 text-slate-400 text-[10px] font-black uppercase mt-1">
+                                        <span><i class="fas fa-school mr-1"></i> <span x-text="chef.school"></span></span>
+                                        <span><i class="fas fa-phone mr-1"></i> <span x-text="chef.phone"></span></span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button @click="approveChef(chef.username)"
+                                            :class="approveLoading == chef.username ? 'btn-loading' : ''"
+                                            class="bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold uppercase text-xs hover:bg-emerald-600 relative">
+                                        <span class="btn-text">Одобрить</span>
+                                        <template x-if="approveLoading == chef.username">
+                                            <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                                        </template>
+                                    </button>
+                                    <button @click="rejectChef(chef.username)"
+                                            :class="rejectLoading == chef.username ? 'btn-loading' : ''"
+                                            class="bg-red-100 text-red-600 px-6 py-3 rounded-xl font-bold uppercase text-xs hover:bg-red-200 relative">
+                                        <span class="btn-text">Удалить</span>
+                                        <template x-if="rejectLoading == chef.username">
+                                            <div class="btn-spinner"><div class="btn-spinner-ring" style="border-top-color:#dc2626"></div></div>
+                                        </template>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="users.filter(u => u.role == 'chef' && !u.isApproved).length === 0">
+                            <div class="text-center py-20 opacity-30"><i class="fas fa-user-clock text-6xl mb-4"></i><p class="font-black uppercase">Нет новых заявок</p></div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- ВКЛАДКИ УЧЕНИКА: МЕНЮ ДНЯ -->
+                <div x-show="tab == 'st_menu'">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-black uppercase">Меню дня</h2>
+                        <div class="flex items-center gap-4">
+                            <div class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl font-bold text-sm">
+                                Всего блюд: <span x-text="menu.length"></span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button @click="filterMenuCategory = 'all'" :class="filterMenuCategory == 'all' ? 'bg-blue-600 text-white' : 'bg-white text-slate-700'" class="px-4 py-2 rounded-xl text-xs font-bold border">Все</button>
+                                <button @click="filterMenuCategory = 'Завтрак'" :class="filterMenuCategory == 'Завтрак' ? 'bg-orange-500 text-white' : 'bg-white text-slate-700'" class="px-4 py-2 rounded-xl text-xs font-bold border">Завтраки</button>
+                                <button @click="filterMenuCategory = 'Обед'" :class="filterMenuCategory == 'Обед' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-700'" class="px-4 py-2 rounded-xl text-xs font-bold border">Обеды</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="m in filteredMenu">
+                            <div class="bg-white p-6 rounded-3xl border shadow-sm relative overflow-hidden transition-all hover:shadow-md hover:scale-[1.02] duration-300" :class="hasAllergen(m) ? 'border-red-300 border-2' : ''">
+
+                                <!-- ОВЕРЛЕЙ "ЗАКОНЧИЛОСЬ" -->
+                                <div x-show="m.portions <= 0 && !boughtDishes[m.id]" class="absolute inset-0 bg-white/90 z-10 flex items-center justify-center">
+                                    <span class="bg-red-500 text-white px-4 py-2 rounded-lg font-black uppercase text-xs rotate-12 animate-pulse">Закончилось</span>
+                                </div>
+
+                                <!-- ОВЕРЛЕЙ "КУПЛЕНО!" -->
+                                <div x-show="boughtDishes[m.id]" class="bought-overlay" :class="boughtDishesExit[m.id] ? 'fade-out' : ''">
+                                    <div class="check-icon">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="bought-text">Куплено!</div>
+                                    <div class="bought-sub" x-text="m.name"></div>
+                                </div>
+
+                                <div class="flex justify-between items-start">
+                                    <div class="flex gap-2">
+                                        <span :class="(m.category || 'Обед') == 'Завтрак' ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'" class="px-3 py-1 rounded-lg text-[10px] font-black uppercase" x-text="((m.category || 'Обед') == 'Завтрак' ? '🌅 ' : '🍽️ ') + (m.category || 'Обед')"></span>
+                                        <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase" x-text="m.type"></span>
+                                    </div>
+                                    <span x-show="isNewDish(m.addedDate)" class="bg-emerald-100 text-emerald-600 px-2 py-1 rounded text-[9px] font-black uppercase animate-pulse">НОВОЕ!</span>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="flex items-start gap-2 flex-wrap">
+                                        <h4 class="text-xl font-bold" x-text="m.name"></h4>
+                                        <!-- КРАСНЫЕ БЕЙДЖИ АЛЛЕРГЕНОВ РЯДОМ С НАЗВАНИЕМ -->
+                                        <template x-for="allergen in getDetectedAllergens(m)">
+                                            <span class="bg-red-600 text-white px-2 py-1 rounded-lg text-[10px] font-black uppercase animate-pulse shadow-lg" x-text="allergen"></span>
+                                        </template>
+                                    </div>
+                                    <!-- ПРЕДУПРЕЖДЕНИЕ ОБ АЛЛЕРГЕНЕ -->
+                                    <div x-show="hasAllergen(m)" class="mt-2 bg-red-50 border-2 border-red-500 rounded-xl p-3 allergen-pulse">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <i class="fas fa-exclamation-triangle text-red-600 text-lg"></i>
+                                            <span class="text-red-600 font-black uppercase text-sm">⚠️ ОПАСНО ДЛЯ ВАС</span>
+                                        </div>
+                                        <p class="text-red-700 font-bold text-xs mt-1">Содержит опасные для вас компоненты. Употребление может вызвать аллергическую реакцию!</p>
+                                    </div>
+                                </div>
+                                <!-- СОСТАВ БЛЮДА -->
+                                <div class="mt-3 bg-slate-50 rounded-xl p-3">
+                                    <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Состав:</p>
+                                    <p class="text-sm text-slate-600 font-medium" x-text="m.ingredients || 'Не указан'"></p>
+                                </div>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase mt-2">
+                                    В наличии: <span :class="m.portions > 5 ? 'text-emerald-600' : 'text-orange-600'" x-text="m.portions"></span> шт.
+                                </p>
+                                <div class="flex justify-between mt-6 items-center">
+                                    <div>
+                                        <span class="text-3xl font-black" x-text="m.price + ' ₽'"></span>
+                                        <p class="text-[10px] text-slate-400 mt-1" x-text="'Добавлено: ' + formatDate(m.addedDate)"></p>
+                                    </div>
+                                    <button @click="buy(m)"
+                                            :disabled="m.portions <= 0 || buyingDish == m.id"
+                                            :class="[
+                                                m.portions <= 0 ? 'bg-slate-300 cursor-not-allowed' : (hasAllergen(m) ? 'bg-orange-600 hover:bg-orange-700' : 'bg-blue-600 hover:bg-blue-700'),
+                                                buyingDish == m.id ? 'btn-loading' : ''
+                                            ]"
+                                            class="text-white px-6 py-3 rounded-xl font-bold text-xs uppercase shadow-lg transition-all relative">
+                                        <span class="btn-text" x-text="hasAllergen(m) ? 'Осторожно!' : 'Купить'"></span>
+                                        <template x-if="buyingDish == m.id">
+                                            <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                                        </template>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="filteredMenu.length === 0">
+                            <div class="col-span-full text-center py-20">
+                                <i class="fas fa-utensils text-6xl text-slate-300 mb-4"></i>
+                                <p class="font-black uppercase text-slate-400">Нет блюд в меню</p>
+                                <p class="text-slate-400 text-sm mt-2">Повар еще не добавил блюда</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- АБОНЕМЕНТ --></ claude>
+                <div x-show="tab == 'st_subscription'">
+                    <h2 class="text-2xl font-black mb-6 uppercase">🎫 Мой абонемент</h2>
+
+                    <!-- ВЫБОР ТИПА АБОНЕМЕНТА -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div @click="if(hasActiveSubscription('Завтраки')) selectedSubType = 'Завтраки'"
+                             :class="[hasActiveSubscription('Завтраки') ? 'cursor-pointer hover:scale-105' : 'opacity-40 cursor-not-allowed', selectedSubType == 'Завтраки' ? 'ring-4 ring-orange-400' : '']"
+                             class="bg-gradient-to-br from-orange-500 to-orange-600 p-8 rounded-3xl text-white shadow-xl transition-all">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-2xl font-black">🌅 ЗАВТРАКИ</h3>
+                                <span x-show="hasActiveSubscription('Завтраки')" class="bg-white text-orange-600 px-3 py-1 rounded-full text-xs font-black uppercase">Активен</span>
+                                <span x-show="!hasActiveSubscription('Завтраки')" class="bg-orange-700 text-white px-3 py-1 rounded-full text-xs font-black uppercase">Не куплен</span>
+                            </div>
+                            <p class="text-sm opacity-90 mb-4">Выберите 1 блюдо + 1 напиток</p>
+                            <div x-show="usedSubscriptionToday('Завтраки')" class="bg-orange-700 rounded-xl p-3 text-sm font-bold">
+                                ✅ Использовано сегодня
+                            </div>
+                        </div>
+
+                        <div @click="if(hasActiveSubscription('Обеды')) selectedSubType = 'Обеды'"
+                             :class="[hasActiveSubscription('Обеды') ? 'cursor-pointer hover:scale-105' : 'opacity-40 cursor-not-allowed', selectedSubType == 'Обеды' ? 'ring-4 ring-emerald-400' : '']"
+                             class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-8 rounded-3xl text-white shadow-xl transition-all">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-2xl font-black">🍽️ ОБЕДЫ</h3>
+                                <span x-show="hasActiveSubscription('Обеды')" class="bg-white text-emerald-600 px-3 py-1 rounded-full text-xs font-black uppercase">Активен</span>
+                                <span x-show="!hasActiveSubscription('Обеды')" class="bg-emerald-700 text-white px-3 py-1 rounded-full text-xs font-black uppercase">Не куплен</span>
+                            </div>
+                            <p class="text-sm opacity-90 mb-4">Выберите 1 первое + 1 второе + 1 напиток</p>
+                            <div x-show="usedSubscriptionToday('Обеды')" class="bg-emerald-700 rounded-xl p-3 text-sm font-bold">
+                                ✅ Использовано сегодня
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ВЫБОР БЛЮД -->
+                    <template x-if="selectedSubType && hasActiveSubscription(selectedSubType) && !usedSubscriptionToday(selectedSubType)">
+                        <div>
+                            <h3 class="text-xl font-black mb-4 uppercase" :class="selectedSubType == 'Завтраки' ? 'text-orange-600' : 'text-emerald-600'" x-text="'Выберите блюда для ' + selectedSubType"></h3>
+
+                            <!-- ИНСТРУКЦИЯ -->
+                            <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 mb-6">
+                                <template x-if="selectedSubType == 'Завтраки'">
+                                    <p class="text-sm font-bold text-blue-700">📋 Выберите: <b>1 блюдо</b> (первое ИЛИ второе) + <b>1 напиток</b></p>
+                                </template>
+                                <template x-if="selectedSubType == 'Обеды'">
+                                    <p class="text-sm font-bold text-blue-700">📋 Выберите: <b>1 первое блюдо</b> + <b>1 второе блюдо</b> + <b>1 напиток</b></p>
+                                </template>
+                            </div>
+
+                            <!-- Первое блюдо (только для Обедов) -->
+                            <template x-if="selectedSubType == 'Обеды'">
+                                <div class="mb-6">
+                                    <h4 class="font-black text-sm text-slate-400 uppercase mb-3">🥣 Первое блюдо</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <template x-for="m in menu.filter(dish => (dish.category || 'Обед') == 'Обед' && dish.type == 'Первое' && dish.portions > 0)">
+                                            <div @click="toggleSubDish(m.id, 'Первое')"
+                                                 :class="selectedSubDishes.includes(m.id) ? 'ring-4 ring-emerald-500 bg-emerald-50' : 'bg-white hover:shadow-md'"
+                                                 class="p-4 rounded-2xl border cursor-pointer transition-all">
+                                                <h5 class="font-bold text-sm" x-text="m.name"></h5>
+                                                <p class="text-xs text-slate-400 mt-1" x-text="'Порций: ' + m.portions"></p>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Второе блюдо -->
+                            <div class="mb-6">
+                                <h4 class="font-black text-sm text-slate-400 uppercase mb-3">🍗 <span x-text="selectedSubType == 'Завтраки' ? 'Блюдо (первое или второе)' : 'Второе блюдо'"></span></h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <template x-for="m in menu.filter(dish => {
+                                        const matchCategory = (dish.category || 'Обед') == (selectedSubType == 'Завтраки' ? 'Завтрак' : 'Обед');
+                                        const matchType = selectedSubType == 'Завтраки' ? (dish.type == 'Первое' || dish.type == 'Второе') : dish.type == 'Второе';
+                                        return matchCategory && matchType && dish.portions > 0;
+                                    })">
+                                        <div @click="toggleSubDish(m.id, 'Второе')"
+                                             :class="selectedSubDishes.includes(m.id) ? 'ring-4 ring-emerald-500 bg-emerald-50' : 'bg-white hover:shadow-md'"
+                                             class="p-4 rounded-2xl border cursor-pointer transition-all">
+                                            <h5 class="font-bold text-sm" x-text="m.name"></h5>
+                                            <p class="text-xs text-slate-400 mt-1"><span x-text="m.type"></span> • Порций: <span x-text="m.portions"></span></p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Напиток -->
+                            <div class="mb-6">
+                                <h4 class="font-black text-sm text-slate-400 uppercase mb-3">🥤 Напиток</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <template x-for="m in menu.filter(dish => {
+                                        const matchCategory = (dish.category || 'Обед') == (selectedSubType == 'Завтраки' ? 'Завтрак' : 'Обед');
+                                        return matchCategory && dish.type == 'Напиток' && dish.portions > 0;
+                                    })">
+                                        <div @click="toggleSubDish(m.id, 'Напиток')"
+                                             :class="selectedSubDishes.includes(m.id) ? 'ring-4 ring-blue-500 bg-blue-50' : 'bg-white hover:shadow-md'"
+                                             class="p-4 rounded-2xl border cursor-pointer transition-all">
+                                            <h5 class="font-bold text-sm" x-text="m.name"></h5>
+                                            <p class="text-xs text-slate-400 mt-1" x-text="'Порций: ' + m.portions"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- КНОПКА ПОДТВЕРЖДЕНИЯ -->
+                            <button @click="useSubscription()"
+                                    :disabled="!canUseSubscription() || useSubLoading"
+                                    :class="[canUseSubscription() && !useSubLoading ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-300 cursor-not-allowed', useSubLoading ? 'btn-loading' : '']"
+                                    class="w-full py-5 rounded-2xl text-white font-black uppercase text-lg shadow-xl transition-all relative">
+                                <span class="btn-text">✅ Получить блюда по абонементу</span>
+                                <template x-if="useSubLoading">
+                                    <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                                </template>
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- СООБЩЕНИЕ ЕСЛИ УЖЕ ИСПОЛЬЗОВАЛ СЕГОДНЯ -->
+                    <template x-if="selectedSubType && usedSubscriptionToday(selectedSubType)">
+                        <div class="text-center py-16 bg-slate-50 rounded-3xl border-2 border-dashed">
+                            <i class="fas fa-check-circle text-6xl text-emerald-400 mb-4"></i>
+                            <p class="font-black uppercase text-slate-600 text-xl">Абонемент уже использован сегодня</p>
+                            <p class="text-slate-400 mt-2">Приходите завтра за новым комплектом!</p>
+                        </div>
+                    </template>
+
+                    <!-- СООБЩЕНИЕ ЕСЛИ НЕТ АКТИВНОГО АБОНЕМЕНТА -->
+                    <template x-if="!selectedSubType">
+                        <div class="text-center py-16 bg-slate-50 rounded-3xl border-2 border-dashed">
+                            <i class="fas fa-ticket-alt text-6xl text-slate-300 mb-4"></i>
+                            <p class="font-black uppercase text-slate-400">Выберите тип абонемента</p>
+                            <p class="text-slate-400 text-sm mt-2">Купите абонемент во вкладке «Кошелёк»</p>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- МОИ ЗАКАЗЫ -->
+                <div x-show="tab == 'st_history'">
+                    <h2 class="text-2xl font-black mb-6 uppercase">Мои заказы</h2>
+                    <div class="bg-white rounded-3xl border overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-400"><tr><th class="p-5">Блюдо</th><th class="p-5 text-center">Статус</th><th class="p-5 text-right">Действие</th></tr></thead>
+                            <tbody>
+                                <template x-for="o in orders.filter(x => x.user == user.username).slice().reverse()">
+                                    <tr class="border-t relative">
+                                        <td class="p-5 font-bold" x-text="o.name"></td>
+                                        <td class="p-5 text-center"><span :class="o.status == 'Выдано' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'" class="px-3 py-1 rounded-full text-[10px] font-black uppercase" x-text="o.status"></span></td>
+                                        <td class="p-5 text-right">
+                                            <template x-if="o.status == 'Оплачено'">
+                                                <!-- ОВЕРЛЕЙ "Отмечено!" на строке -->
+                                                <div x-show="eatenRows[o.id]" class="eaten-overlay" :class="eatenRowsExit[o.id] ? 'fade-out' : ''">
+                                                    <i class="fas fa-utensils"></i>
+                                                    <span>Отмечено!</span>
+                                                </div>
+                                                <button @click="confirmOrderStudent(o.id)"
+                                                        :disabled="confirmingOrder == o.id"
+                                                        :class="confirmingOrder == o.id ? 'btn-loading' : ''"
+                                                        class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-[10px] uppercase font-bold hover:bg-emerald-600 relative">
+                                                    <span class="btn-text">Я поел(а)</span>
+                                                    <template x-if="confirmingOrder == o.id">
+                                                        <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                                                    </template>
+                                                </button>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="orders.filter(x => x.user == user.username).length === 0">
+                                    <tr><td colspan="3" class="p-10 text-center text-slate-400 font-bold">Пока нет заказов</td></tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- КОШЕЛЕК -->
+                <div x-show="tab == 'st_wallet'">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-white p-10 rounded-[2rem] border text-center shadow-lg">
+                            <p class="text-xs font-black text-slate-400 uppercase mb-2">Текущий баланс</p>
+                            <h1 class="text-6xl font-black text-slate-800 mb-8" x-text="user.balance + ' ₽'"></h1>
+
+                            <!-- ПРОВЕРКА НАЛИЧИЯ КАРТЫ -->
+                            <template x-if="!hasCard">
+                                <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-6 mb-4">
+                                    <i class="fas fa-credit-card text-red-500 text-4xl mb-3"></i>
+                                    <p class="font-bold text-red-700 text-sm">Карта не привязана</p>
+                                    <p class="text-red-600 text-xs mt-2">Перейдите во вкладку "Моя карта" для привязки</p>
+                                </div>
+                            </template>
+
+                            <template x-if="hasCard">
+                                <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 mb-4">
+                                    <i class="fas fa-check-circle text-emerald-500 text-2xl mb-2"></i>
+                                    <p class="font-bold text-emerald-700 text-sm">Карта привязана</p>
+                                    <p class="text-emerald-600 text-xs mt-1" x-text="'**** **** **** ' + (user.cardNumber ? user.cardNumber.slice(-4) : '')"></p>
+                                </div>
+                            </template>
+
+                            <input type="number" x-model="refillAmount" class="w-full p-4 border rounded-2xl mb-4 text-center font-bold bg-slate-50 outline-none focus:border-emerald-500" :disabled="!hasCard">
+                            <button @click="refill()"
+                                    :disabled="!hasCard || refillLoading"
+                                    :class="[hasCard ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-slate-300 cursor-not-allowed', refillLoading ? 'btn-loading' : '']"
+                                    class="w-full text-white py-4 rounded-2xl font-bold uppercase shadow-lg transition-all relative">
+                                <span class="btn-text" x-text="hasCard ? 'Пополнить баланс' : 'Привяжите карту'"></span>
+                                <template x-if="refillLoading">
+                                    <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                                </template>
+                            </button>
+                        </div>
+                        <div class="space-y-4">
+                            <div @click="buySub('Завтраки', 3300)"
+                                 class="bg-blue-600 p-8 rounded-[2rem] text-white cursor-pointer shadow-xl hover:scale-[1.02] transition-transform relative overflow-hidden">
+                                <template x-if="subLoading == 'Завтраки'">
+                                    <div class="absolute inset-0 bg-blue-800/60 z-10 flex items-center justify-center">
+                                        <div class="btn-spinner-ring"></div>
+                                    </div>
+                                </template>
+                                <h4 class="font-bold uppercase text-xs opacity-80">Абонемент Завтраки</h4><div class="text-3xl font-black">3 300 ₽</div>
+                            </div>
+                            <div @click="buySub('Обеды', 5500)"
+                                 class="bg-orange-500 p-8 rounded-[2rem] text-white cursor-pointer shadow-xl hover:scale-[1.02] transition-transform relative overflow-hidden">
+                                <template x-if="subLoading == 'Обеды'">
+                                    <div class="absolute inset-0 bg-orange-800/60 z-10 flex items-center justify-center">
+                                        <div class="btn-spinner-ring"></div>
+                                    </div>
+                                </template>
+                                <h4 class="font-bold uppercase text-xs opacity-80">Абонемент Обеды</h4><div class="text-3xl font-black">5 500 ₽</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- МОЯ КАРТА -->
+                <div x-show="tab == 'st_card'">
+                    <h2 class="text-2xl font-black mb-6 uppercase flex items-center gap-2">
+                        <i class="fas fa-credit-card text-blue-600"></i> Банковская карта
+                    </h2>
+
+                    <!-- ВИЗУАЛИЗАЦИЯ КАРТЫ -->
+                    <div class="mb-8">
+                        <div class="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-8 rounded-3xl shadow-2xl max-w-md mx-auto text-white relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full -mr-20 -mt-20"></div>
+                            <div class="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-16 -mb-16"></div>
+
+                            <div class="relative z-10">
+                                <div class="flex justify-between items-start mb-8">
+                                    <i class="fas fa-credit-card text-3xl opacity-80"></i>
+                                    <span class="text-xs font-bold opacity-60 uppercase">Банковская карта</span>
+                                </div>
+
+                                <div class="mb-6">
+                                    <p class="text-xs opacity-60 uppercase mb-1">Номер карты</p>
+                                    <p class="text-2xl font-mono tracking-wider" x-text="cardNumber || '**** **** **** ****'"></p>
+                                </div>
+
+                                <div class="flex justify-between items-end">
+                                    <div>
+                                        <p class="text-[10px] opacity-60 uppercase mb-1">Держатель</p>
+                                        <p class="text-sm font-bold uppercase" x-text="cardHolder || 'IVAN IVANOV'"></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[10px] opacity-60 uppercase mb-1">Действует до</p>
+                                        <p class="text-sm font-bold font-mono" x-text="cardExpiry || 'MM/YY'"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ФОРМА ВВОДА ДАННЫХ КАРТЫ -->
+                    <div class="bg-white p-8 rounded-[2rem] border shadow-sm max-w-2xl mx-auto">
+                        <template x-if="hasCard">
+                            <div class="bg-emerald-50 border-2 border-emerald-500 rounded-2xl p-4 mb-6 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-check-circle text-emerald-600 text-2xl"></i>
+                                    <div>
+                                        <p class="font-black text-emerald-700 uppercase text-sm">Карта привязана</p>
+                                        <p class="text-emerald-600 text-xs">Вы можете пополнять баланс</p>
+                                    </div>
+                                </div>
+                                <button @click="removeCard()"
+                                        :disabled="removeCardLoading"
+                                        :class="removeCardLoading ? 'btn-loading' : ''"
+                                        class="bg-red-500 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-red-600 transition-all relative">
+                                    <span class="btn-text">Удалить</span>
+                                    <template x-if="removeCardLoading">
+                                        <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                                    </template>
+                                </button>
+                            </div>
+                        </template>
+
+                        <template x-if="!hasCard">
+                            <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 mb-6">
+                                <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                                <span class="text-blue-700 font-bold text-sm">Привяжите карту для пополнения баланса</span>
+                            </div>
+                        </template>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-black text-slate-400 uppercase mb-2">Номер карты</label>
+                                <input
+                                    type="text"
+                                    x-model="cardNumber"
+                                    @input="cardNumber = formatCardNumber(cardNumber.replace(/\s/g, '').slice(0, 16))"
+                                    placeholder="1234 5678 9012 3456"
+                                    maxlength="19"
+                                    class="w-full p-4 border-2 rounded-2xl font-mono text-lg font-bold bg-slate-50 outline-none focus:border-blue-500 transition-all">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-black text-slate-400 uppercase mb-2">Держатель карты</label>
+                                <input
+                                    type="text"
+                                    x-model="cardHolder"
+                                    placeholder="IVAN IVANOV"
+                                    class="w-full p-4 border-2 rounded-2xl font-bold uppercase bg-slate-50 outline-none focus:border-blue-500 transition-all">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-black text-slate-400 uppercase mb-2">Срок действия</label>
+                                    <input
+                                        type="text"
+                                        x-model="cardExpiry"
+                                        @input="if(cardExpiry.length === 2 && !cardExpiry.includes('/')) cardExpiry += '/'"
+                                        placeholder="MM/YY"
+                                        maxlength="5"
+                                        class="w-full p-4 border-2 rounded-2xl font-mono font-bold bg-slate-50 outline-none focus:border-blue-500 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-black text-slate-400 uppercase mb-2">CVV</label>
+                                    <input
+                                        type="password"
+                                        x-model="cardCVV"
+                                        placeholder="123"
+                                        maxlength="3"
+                                        class="w-full p-4 border-2 rounded-2xl font-mono font-bold bg-slate-50 outline-none focus:border-blue-500 transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button @click="saveCard()"
+                                :disabled="saveCardLoading"
+                                :class="saveCardLoading ? 'btn-loading' : ''"
+                                class="w-full mt-6 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-blue-700 transition-all relative">
+                            <span class="btn-text"><i class="fas fa-save mr-2"></i> Сохранить карту</span>
+                            <template x-if="saveCardLoading">
+                                <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                            </template>
+                        </button>
+
+                        <div class="mt-6 bg-slate-50 rounded-2xl p-4">
+                            <p class="text-xs text-slate-500 flex items-start gap-2">
+                                <i class="fas fa-lock text-slate-400 mt-0.5"></i>
+                                <span>Данные вашей карты надёжно защищены. CVV-код не сохраняется и используется только при привязке карты.</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- АЛЛЕРГИИ -->
+                <div x-show="tab == 'st_profile'">
+                    <h2 class="text-2xl font-black mb-6 uppercase text-red-500">Настройки здоровья</h2>
+                    <div class="bg-white p-8 rounded-[2rem] border shadow-sm">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                            <template x-for="alg in ['Лактоза', 'Орехи', 'Глютен', 'Яйца', 'Цитрус', 'Морепродукты']">
+                                <label class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl cursor-pointer border-2 border-transparent hover:border-red-100 transition-all">
+                                    <input type="checkbox" :value="alg" x-model="selectedAllergens" class="w-5 h-5 rounded accent-red-500">
+                                    <span class="font-bold text-sm text-slate-700" x-text="alg"></span>
+                                </label>
+                            </template>
+                        </div>
+                        <textarea x-model="allergiesText" class="w-full p-6 border rounded-[2rem] h-32 outline-none mb-4 focus:border-red-500 bg-slate-50 font-bold" placeholder="Другие аллергены (через запятую)..."></textarea>
+                        <button @click="saveProfile()"
+                                :disabled="profileLoading"
+                                :class="profileLoading ? 'btn-loading' : ''"
+                                class="w-full bg-red-500 text-white py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-red-600 transition-all relative">
+                            <span class="btn-text">Сохранить настройки</span>
+                            <template x-if="profileLoading">
+                                <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                            </template>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ВКЛАДКИ ПОВАРА: ОЧЕРЕДЬ ВЫДАЧИ -->
+                <div x-show="tab == 'ch_issue'">
+                    <h2 class="text-2xl font-black mb-6 uppercase">Очередь выдачи</h2>
+                    <div class="space-y-3">
+                        <template x-for="o in orders.filter(x => x.status == 'Оплачено')">
+                            <div class="bg-white p-5 rounded-2xl border flex justify-between items-center shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+                                <!-- ОВЕРЛЕЙ "Выдано!" -->
+                                <div x-show="issuedRows[o.id]" class="eaten-overlay" :class="issuedRowsExit[o.id] ? 'fade-out' : ''">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Выдано!</span>
+                                </div>
+                                <div>
+                                    <b class="text-lg" x-text="o.name"></b>
+                                    <p class="text-sm text-slate-400" x-text="'Ученик: ' + o.user"></p>
+                                </div>
+                                <button @click="confirmOrderChef(o.id)"
+                                        :disabled="confirmingOrder == o.id"
+                                        :class="confirmingOrder == o.id ? 'btn-loading' : ''"
+                                        class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold uppercase text-xs hover:bg-blue-700 transition-all relative">
+                                    <span class="btn-text">Выдать</span>
+                                    <template x-if="confirmingOrder == o.id">
+                                        <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                                    </template>
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="orders.filter(x => x.status == 'Оплачено').length === 0">
+                            <div class="text-center py-10">
+                                <i class="fas fa-check-circle text-4xl text-emerald-400 mb-4"></i>
+                                <p class="font-bold text-slate-400">Нет заказов в очереди</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- СКЛАД И КУХНЯ -->
+                <div x-show="tab == 'ch_stock'">
+                    <h2 class="text-2xl font-black mb-6 uppercase text-blue-600">Склад и Кухня</h2>
+                    <div class="bg-white p-6 rounded-3xl border shadow-sm mb-8 border-l-8 border-emerald-500">
+                        <h3 class="font-black text-sm text-slate-400 uppercase mb-4">Добавить новое блюдо</h3>
+                        <p class="text-sm text-slate-600 mb-4"><i class="fas fa-info-circle text-blue-500 mr-2"></i>Блюдо сразу появится у учеников в меню</p>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+                            <input type="text" x-model="newDish.name" placeholder="Название блюда" class="p-3 bg-slate-50 border rounded-xl font-bold outline-none focus:border-emerald-500">
+                            <input type="number" x-model="newDish.price" placeholder="Цена (руб)" class="p-3 bg-slate-50 border rounded-xl font-bold outline-none focus:border-emerald-500">
+                            <input type="number" x-model="newDish.portions" placeholder="Кол-во порций" class="p-3 bg-slate-50 border rounded-xl font-bold outline-none focus:border-emerald-500">
+                            <select x-model="newDish.category" class="p-3 bg-slate-50 border rounded-xl font-bold outline-none focus:border-emerald-500">
+                                <option value="Завтрак">🌅 Завтрак</option><option value="Обед" selected>🍽️ Обед</option>
+                            </select>
+                            <select x-model="newDish.type" class="p-3 bg-slate-50 border rounded-xl font-bold outline-none focus:border-emerald-500">
+                                <option value="Первое">Первое</option><option value="Второе" selected>Второе</option><option value="Салат">Салат</option><option value="Выпечка">Выпечка</option><option value="Напиток">Напиток</option><option value="Закуска">Закуска</option>
+                            </select>
+                        </div>
+                        <!-- ПОЛЕ ДЛЯ СОСТАВА -->
+                        <textarea x-model="newDish.ingredients" placeholder="Состав блюда (например: курица, рис, морковь, лук, специи)" class="w-full p-3 bg-slate-50 border rounded-xl font-bold outline-none focus:border-emerald-500 mb-3 h-20 resize-none"></textarea>
+                        <button @click="addNewDish()"
+                                :disabled="addDishLoading"
+                                :class="addDishLoading ? 'btn-loading' : ''"
+                                class="w-full mt-1 bg-emerald-500 text-white py-3 rounded-xl font-black uppercase hover:bg-emerald-600 transition-all shadow-lg relative">
+                            <span class="btn-text">Добавить в меню для всех</span>
+                            <template x-if="addDishLoading">
+                                <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                            </template>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-black text-sm text-slate-400 uppercase">Блюда в меню</h3>
+                                <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase" x-text="'Всего: ' + menu.length"></span>
+                            </div>
+                            <div class="space-y-3 max-h-[500px] overflow-y-auto scroll-custom p-1">
+                                <template x-for="(m, index) in menu">
+                                    <div class="bg-white p-5 rounded-2xl border flex justify-between items-center hover:shadow-md transition-all" :class="index % 2 === 0 ? 'border-l-4 border-blue-500' : 'border-l-4 border-emerald-500'">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2">
+                                                <b class="text-lg" x-text="m.name"></b>
+                                                <span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-black uppercase" x-text="m.type"></span>
+                                            </div>
+                                            <p class="text-sm text-slate-400"><span class="font-bold" x-text="m.price + ' ₽'"></span> • <span x-text="m.portions + ' порций'"></span></p>
+                                            <p class="text-xs text-slate-500 mt-1"><i class="fas fa-list-ul mr-1"></i><span x-text="m.ingredients || 'Состав не указан'"></span></p>
+                                            <p class="text-xs text-slate-400 mt-1" x-text="'Добавлено: ' + formatDate(m.addedDate)"></p>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <button @click="updateStock(m, -1)" class="w-8 h-8 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center">
+                                                <i class="fas fa-minus text-xs"></i>
+                                            </button>
+                                            <span class="w-8 text-center font-black text-lg" :class="m.portions < 3 ? 'text-orange-600' : 'text-slate-800'" x-text="m.portions"></span>
+                                            <button @click="updateStock(m, 1)" class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors flex items-center justify-center">
+                                                <i class="fas fa-plus text-xs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="menu.length === 0">
+                                    <div class="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                                        <i class="fas fa-utensils text-4xl text-slate-300 mb-4"></i>
+                                        <p class="font-bold text-slate-400">Нет блюд в меню</p>
+                                        <p class="text-slate-400 text-sm mt-2">Добавьте первое блюдо</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-sm text-slate-400 uppercase mb-4">Ингредиенты на складе</h3>
+                            <div class="bg-white rounded-3xl border p-5 space-y-4 shadow-sm">
+                                <template x-for="i in ingredients">
+                                    <div class="flex justify-between items-center border-b pb-3 last:border-0 hover:bg-slate-50 p-2 rounded-xl transition-colors">
+                                        <div>
+                                            <b x-text="i.name"></b>
+                                            <p class="text-xs text-slate-400" x-text="'Ед.изм: ' + i.unit"></p>
+                                        </div>
+                                        <input type="number" x-model.number="i.amount" @change="setIng(i)" class="w-24 p-2 bg-slate-50 border rounded-xl text-center font-bold focus:border-blue-500 outline-none">
+                                    </div>
+                                </template>
+                                <div class="pt-4 flex gap-2">
+                                    <input type="text" x-model="newIng.name" placeholder="Новый продукт" class="flex-1 p-3 bg-slate-50 border rounded-xl text-sm font-bold outline-none focus:border-blue-500">
+                                    <input type="text" x-model="newIng.unit" placeholder="кг" class="w-20 p-3 bg-slate-50 border rounded-xl text-sm font-bold text-center outline-none">
+                                    <button @click="addNewIngredient()"
+                                            :disabled="addIngLoading"
+                                            :class="addIngLoading ? 'btn-loading' : ''"
+                                            class="bg-blue-600 text-white px-4 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors relative">
+                                        <span class="btn-text">Добавить</span>
+                                        <template x-if="addIngLoading">
+                                            <div class="btn-spinner"><div class="btn-spinner-ring" style="width:16px;height:16px;border-width:2px"></div></div>
+                                        </template>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- УЧЕТ ВЫДАЧИ -->
+                <div x-show="tab == 'ch_accounting'">
+                    <h2 class="text-2xl font-black mb-6 uppercase">Учет выдачи</h2>
+                    <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 font-black uppercase text-slate-400 text-[10px]"><tr><th class="p-5">Время</th><th class="p-5">Ученик</th><th class="p-5">Блюдо</th></tr></thead>
+                            <tbody><template x-for="o in orders.filter(x => x.status == 'Выдано').slice().reverse()"><tr class="border-t"><td class="p-5 text-slate-400" x-text="o.issuedAt || 'Ранее'"></td><td class="p-5 font-bold" x-text="o.user"></td><td class="p-5" x-text="o.name"></td></tr></template></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- АНАЛИТИКА АДМИН -->
+                <div x-show="tab == 'ad_stats'">
+                    <h2 class="text-2xl font-black mb-6 uppercase">Аналитика</h2>
+
+                    <!-- ОСНОВНЫЕ ФИНАНСОВЫЕ ПОКАЗАТЕЛИ -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white p-6 rounded-3xl border border-b-4 border-emerald-500">
+                            <p class="text-slate-400 font-bold uppercase text-[10px] mb-1">💰 Получено (всего)</p>
+                            <h1 class="text-3xl font-black text-emerald-600" x-text="(stat_dishRevenue + stat_subRevenue) + ' ₽'"></h1>
+                            <p class="text-xs text-slate-400 mt-1">Блюда + Абонементы</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border border-b-4 border-red-500">
+                            <p class="text-slate-400 font-bold uppercase text-[10px] mb-1">💸 Затрачено</p>
+                            <h1 class="text-3xl font-black text-red-600" x-text="stat_purchaseExpense + ' ₽'"></h1>
+                            <p class="text-xs text-slate-400 mt-1">Закупка продуктов</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border border-b-4 border-blue-500">
+                            <p class="text-slate-400 font-bold uppercase text-[10px] mb-1">📊 Прибыль</p>
+                            <h1 class="text-3xl font-black text-blue-600" x-text="((stat_dishRevenue + stat_subRevenue) - stat_purchaseExpense) + ' ₽'"></h1>
+                            <p class="text-xs text-slate-400 mt-1">Доход - Расход</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border border-b-4 border-purple-500">
+                            <p class="text-slate-400 font-bold uppercase text-[10px] mb-1">👥 Посещаемость</p>
+                            <h1 class="text-3xl font-black text-purple-600" x-text="stat_attendance + '%'"></h1>
+                            <p class="text-xs text-slate-400 mt-1">Выдано заказов</p>
+                        </div>
+                    </div>
+
+                    <!-- ДЕТАЛИЗАЦИЯ ДОХОДОВ -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-3xl text-white shadow-xl">
+                            <p class="font-bold uppercase text-xs opacity-80 mb-1">Выручка от блюд</p>
+                            <h1 class="text-4xl font-black" x-text="stat_dishRevenue + ' ₽'"></h1>
+                            <p class="text-xs opacity-80 mt-2" x-text="stat_totalDishes + ' блюд продано'"></p>
+                        </div>
+                        <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-3xl text-white shadow-xl">
+                            <p class="font-bold uppercase text-xs opacity-80 mb-1">Абонементы</p>
+                            <h1 class="text-4xl font-black" x-text="stat_subRevenue + ' ₽'"></h1>
+                            <p class="text-xs opacity-80 mt-2" x-text="subTransactions.length + ' абонементов'"></p>
+                        </div>
+                        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-3xl text-white shadow-xl">
+                            <p class="font-bold uppercase text-xs opacity-80 mb-1">Всего блюд куплено</p>
+                            <h1 class="text-4xl font-black" x-text="stat_totalDishes"></h1>
+                            <p class="text-xs opacity-80 mt-2">Включая выданные</p>
+                        </div>
+                    </div>
+
+                    <!-- ОТЗЫВЫ -->
+                    <div class="bg-white p-8 rounded-[2rem] border shadow-sm">
+                        <h3 class="font-black mb-6 uppercase text-lg flex items-center gap-2">
+                            <i class="fas fa-comments text-blue-500"></i> Отзывы
+                        </h3>
+                        <div class="space-y-4 max-h-[400px] overflow-y-auto scroll-custom">
+                            <template x-for="r in reviews.slice().reverse()">
+                                <div class="p-5 bg-slate-50 rounded-2xl border-l-4 border-blue-500">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="font-black text-[10px] uppercase text-blue-600" x-text="r.dish"></span>
+                                        <span class="text-[9px] font-bold text-slate-400" x-text="r.author"></span>
+                                    </div>
+                                    <p class="text-sm italic text-slate-600" x-text="'«' + r.text + '»'"></p>
+                                </div>
+                            </template>
+                            <template x-if="reviews.length === 0">
+                                <div class="text-center py-10 text-slate-400 font-bold">Пока нет отзывов</div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ФИНАНСОВЫЙ ОТЧЕТ -->
+                <div x-show="tab == 'ad_report'">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-black uppercase">Финансовый отчет</h2>
+                        <button @click="downloadCSVReport()"
+                                :disabled="csvLoading"
+                                :class="csvLoading ? 'btn-loading' : ''"
+                                class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black uppercase text-xs shadow-lg flex items-center gap-2 hover:bg-blue-700 relative">
+                            <span class="btn-text"><i class="fas fa-file-download text-lg"></i> Скачать CSV</span>
+                            <template x-if="csvLoading">
+                                <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                            </template>
+                        </button>
+                    </div>
+
+                    <!-- ФИНАНСОВАЯ СВОДКА -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-3xl text-white shadow-xl">
+                            <p class="font-bold uppercase text-xs opacity-80 mb-1">💰 Получено</p>
+                            <h1 class="text-3xl font-black" x-text="(stat_dishRevenue + stat_subRevenue) + ' ₽'"></h1>
+                            <p class="text-xs opacity-80 mt-1">Всего доход</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-red-500 to-red-600 p-6 rounded-3xl text-white shadow-xl">
+                            <p class="font-bold uppercase text-xs opacity-80 mb-1">💸 Затрачено</p>
+                            <h1 class="text-3xl font-black" x-text="stat_purchaseExpense + ' ₽'"></h1>
+                            <p class="text-xs opacity-80 mt-1">Закупка продуктов</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-3xl text-white shadow-xl">
+                            <p class="font-bold uppercase text-xs opacity-80 mb-1">📊 Прибыль</p>
+                            <h1 class="text-3xl font-black" x-text="((stat_dishRevenue + stat_subRevenue) - stat_purchaseExpense) + ' ₽'"></h1>
+                            <p class="text-xs opacity-80 mt-1">Чистый доход</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-3xl text-white shadow-xl">
+                            <p class="font-bold uppercase text-xs opacity-80 mb-1">🍽️ Блюд продано</p>
+                            <h1 class="text-3xl font-black" x-text="stat_totalDishes"></h1>
+                            <p class="text-xs opacity-80 mt-1">Выдано заказов</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-3xl text-white shadow-xl">
+                            <p class="font-bold uppercase text-xs opacity-80 mb-1">👥 Посещаемость</p>
+                            <h1 class="text-3xl font-black" x-text="stat_attendance + '%'"></h1>
+                            <p class="text-xs opacity-80 mt-1">Процент выдачи</p>
+                        </div>
+                    </div>
+
+                    <!-- ДЕТАЛИЗАЦИЯ ДОХОДОВ И РАСХОДОВ -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                            <h3 class="font-black uppercase text-sm text-emerald-600 mb-4 flex items-center gap-2">
+                                <i class="fas fa-arrow-up"></i> Источники дохода
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center p-3 bg-blue-50 rounded-xl">
+                                    <span class="font-bold text-sm">Продажа блюд</span>
+                                    <span class="font-black text-lg text-blue-600" x-text="stat_dishRevenue + ' ₽'"></span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-orange-50 rounded-xl">
+                                    <span class="font-bold text-sm">Абонементы</span>
+                                    <span class="font-black text-lg text-orange-600" x-text="stat_subRevenue + ' ₽'"></span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-emerald-50 rounded-xl border-2 border-emerald-500">
+                                    <span class="font-black text-sm uppercase">Итого доход</span>
+                                    <span class="font-black text-xl text-emerald-600" x-text="(stat_dishRevenue + stat_subRevenue) + ' ₽'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                            <h3 class="font-black uppercase text-sm text-red-600 mb-4 flex items-center gap-2">
+                                <i class="fas fa-arrow-down"></i> Расходы
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center p-3 bg-red-50 rounded-xl">
+                                    <span class="font-bold text-sm">Закупка продуктов</span>
+                                    <span class="font-black text-lg text-red-600" x-text="stat_purchaseExpense + ' ₽'"></span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                                    <span class="font-bold text-sm text-slate-400">Одобрено заявок</span>
+                                    <span class="font-bold text-lg text-slate-600" x-text="purchases.filter(p => p.status === 'Одобрено').length + ' шт'"></span>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-blue-50 rounded-xl border-2 border-blue-500">
+                                    <span class="font-black text-sm uppercase">Чистая прибыль</span>
+                                    <span class="font-black text-xl" :class="((stat_dishRevenue + stat_subRevenue) - stat_purchaseExpense) >= 0 ? 'text-blue-600' : 'text-red-600'" x-text="((stat_dishRevenue + stat_subRevenue) - stat_purchaseExpense) + ' ₽'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ТАБЛИЦА ЗАКАЗОВ -->
+                    <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
+                        <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+                            <div class="text-sm font-bold text-slate-700">
+                                Всего записей: <span class="text-blue-600" x-text="orders.length"></span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button @click="filterStatus = 'all'" :class="filterStatus == 'all' ? 'bg-blue-600 text-white' : 'bg-white text-slate-700'" class="px-4 py-2 rounded-xl text-xs font-bold border">Все</button>
+                                <button @click="filterStatus = 'Выдано'" :class="filterStatus == 'Выдано' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-700'" class="px-4 py-2 rounded-xl text-xs font-bold border">Выдано</button>
+                                <button @click="filterStatus = 'Оплачено'" :class="filterStatus == 'Оплачено' ? 'bg-orange-600 text-white' : 'bg-white text-slate-700'" class="px-4 py-2 rounded-xl text-xs font-bold border">Ожидает</button>
+                            </div>
+                        </div>
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 font-black uppercase text-slate-400 text-[10px]">
+                                <tr>
+                                    <th class="p-5">Дата и время</th>
+                                    <th class="p-5">Ученик</th>
+                                    <th class="p-5">Блюдо</th>
+                                    <th class="p-5">Стоимость</th>
+                                    <th class="p-5">Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="o in filteredOrders.slice().reverse()">
+                                    <tr class="border-t hover:bg-slate-50 transition-colors">
+                                        <td class="p-5 text-slate-500 font-medium" x-text="o.issuedAt || formatDate(o.createdAt)"></td>
+                                        <td class="p-5">
+                                            <div class="font-bold" x-text="o.user"></div>
+                                            <div class="text-xs text-slate-400" x-text="getUserClass(o.user)"></div>
+                                        </td>
+                                        <td class="p-5">
+                                            <div class="font-bold" x-text="o.name"></div>
+                                            <div class="text-xs text-slate-400" x-text="getDishType(o.name)"></div>
+                                        </td>
+                                        <td class="p-5 font-black text-lg" x-text="o.price + ' ₽'"></td>
+                                        <td class="p-5">
+                                            <span :class="o.status == 'Выдано' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'"
+                                                  class="px-3 py-1 rounded-full text-[10px] font-black uppercase"
+                                                  x-text="o.status">
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <div class="p-5 bg-slate-50 border-t flex justify-between items-center">
+                            <div class="text-sm font-bold text-slate-700">
+                                Сумма: <span class="text-emerald-600 text-lg" x-text="filteredOrders.reduce((sum, o) => sum + o.price, 0) + ' ₽'"></span>
+                            </div>
+                            <div class="text-sm font-bold text-slate-700">
+                                Показано: <span x-text="filteredOrders.length"></span> из <span x-text="orders.length"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ОТЗЫВЫ УЧЕНИК -->
+                <div x-show="tab == 'st_rev'">
+                    <h2 class="text-2xl font-black mb-6 uppercase">Оставить отзыв</h2>
+                    <div class="bg-white p-8 rounded-[2rem] border shadow-sm">
+                        <select x-model="reviewDish" class="w-full p-4 border rounded-2xl mb-4 bg-slate-50 outline-none">
+                            <option value="">Выберите блюдо...</option>
+                            <template x-for="m in menu">
+                                <option :value="m.name" x-text="m.name"></option>
+                            </template>
+                        </select>
+                        <textarea x-model="reviewText" placeholder="Напишите здесь ваше мнение..." class="w-full p-4 border rounded-2xl mb-4 h-32 outline-none focus:border-blue-500"></textarea>
+                        <button @click="addReview()"
+                                :disabled="reviewLoading"
+                                :class="reviewLoading ? 'btn-loading' : ''"
+                                class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold uppercase w-full hover:bg-blue-700 transition-all relative">
+                            <span class="btn-text">Отправить отзыв</span>
+                            <template x-if="reviewLoading">
+                                <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                            </template>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ЗАКУПКИ ПОВАР -->
+                <div x-show="tab == 'ch_buy'">
+                    <h2 class="text-2xl font-black mb-6 uppercase">Закупка продуктов</h2>
+                    <div class="bg-white p-8 rounded-[2rem] border shadow-sm">
+                        <div class="space-y-3">
+                            <input x-model="purchaseItem" class="w-full p-4 border rounded-2xl outline-none bg-slate-50 font-bold focus:border-blue-500" placeholder="Название продукта">
+                            <input x-model="purchaseQty" class="w-full p-4 border rounded-2xl outline-none bg-slate-50 font-bold focus:border-blue-500" placeholder="Количество (например: 10 кг)">
+                            <input x-model="purchasePrice" type="number" class="w-full p-4 border rounded-2xl outline-none bg-slate-50 font-bold focus:border-blue-500" placeholder="Цена (руб)">
+                        </div>
+                        <button @click="addPurchase()"
+                                :disabled="purchaseLoading"
+                                :class="purchaseLoading ? 'btn-loading' : ''"
+                                class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold uppercase w-full hover:bg-blue-700 mt-4 shadow-lg transition-all relative">
+                            <span class="btn-text">Отправить заявку</span>
+                            <template x-if="purchaseLoading">
+                                <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                            </template>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ОДОБРЕНИЕ ЗАКУПОК АДМИН -->
+                <div x-show="tab == 'ad_approve'">
+                    <h2 class="text-2xl font-black mb-6 uppercase">Одобрение закупок</h2>
+
+                    <!-- СВОДКА ПО ОЖИДАЮЩИМ ЗАКУПКАМ -->
+                    <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-6" x-show="purchases.filter(x => x.status == 'Ожидает').length > 0">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-bold text-slate-600 uppercase">Ожидает одобрения</p>
+                                <p class="text-3xl font-black text-blue-600" x-text="purchases.filter(x => x.status == 'Ожидает').length + ' заявок'"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-slate-600 uppercase">Общая сумма</p>
+                                <p class="text-3xl font-black text-orange-600" x-text="purchases.filter(x => x.status == 'Ожидает').reduce((s, p) => s + (p.price || 0), 0) + ' ₽'"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <template x-for="p in purchases.filter(x => x.status == 'Ожидает')">
+                            <div class="bg-white p-6 rounded-3xl border flex justify-between items-center shadow-sm border-l-8 border-orange-400 hover:shadow-lg transition-all relative overflow-hidden">
+                                <!-- ОВЕРЛЕЙ "Одобрено!" -->
+                                <div x-show="approvedPurchases[p.id]" class="eaten-overlay" :class="approvedPurchasesExit[p.id] ? 'fade-out' : ''">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Одобрено!</span>
+                                </div>
+                                <!-- ОВЕРЛЕЙ "Запрещено!" -->
+                                <div x-show="rejectedPurchases[p.id]" class="eaten-overlay" style="background:linear-gradient(135deg, rgba(220,38,38,0.95), rgba(185,28,28,0.97))" :class="rejectedPurchasesExit[p.id] ? 'fade-out' : ''">
+                                    <i class="fas fa-ban"></i>
+                                    <span>Запрещено!</span>
+                                </div>
+                                <div class="flex-1">
+                                    <b class="text-xl block" x-text="p.item"></b>
+                                    <div class="flex gap-4 text-slate-400 text-xs mt-2">
+                                        <span><i class="fas fa-box mr-1"></i> Количество: <b x-text="p.qty"></b></span>
+                                        <span><i class="fas fa-ruble-sign mr-1"></i> Цена: <b class="text-orange-600" x-text="(p.price || 0) + ' ₽'"></b></span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button @click="approvePurchase(p)"
+                                            :disabled="approvePurchaseLoading == p.id || rejectPurchaseLoading == p.id"
+                                            :class="approvePurchaseLoading == p.id ? 'btn-loading' : ''"
+                                            class="bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase hover:bg-emerald-600 shadow-lg transition-all relative">
+                                        <span class="btn-text"><i class="fas fa-check mr-1"></i>Одобрить</span>
+                                        <template x-if="approvePurchaseLoading == p.id">
+                                            <div class="btn-spinner"><div class="btn-spinner-ring"></div></div>
+                                        </template>
+                                    </button>
+                                    <button @click="rejectPurchase(p)"
+                                            :disabled="approvePurchaseLoading == p.id || rejectPurchaseLoading == p.id"
+                                            :class="rejectPurchaseLoading == p.id ? 'btn-loading' : ''"
+                                            class="bg-red-100 text-red-600 px-6 py-3 rounded-xl font-bold text-xs uppercase hover:bg-red-200 shadow transition-all relative">
+                                        <span class="btn-text"><i class="fas fa-ban mr-1"></i>Запретить</span>
+                                        <template x-if="rejectPurchaseLoading == p.id">
+                                            <div class="btn-spinner"><div class="btn-spinner-ring" style="border-top-color:#dc2626"></div></div>
+                                        </template>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="purchases.filter(x => x.status == 'Ожидает').length === 0">
+                            <div class="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed">
+                                <i class="fas fa-clipboard-check text-6xl text-slate-300 mb-4"></i>
+                                <p class="font-black uppercase text-slate-400">Нет заявок на закупку</p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- ИСТОРИЯ ЗАКУПОК (одобрены + запрещены) -->
+                    <div x-show="purchases.filter(x => x.status == 'Одобрено' || x.status == 'Запрещено').length > 0" class="mt-8">
+                        <h3 class="text-lg font-black mb-4 uppercase text-slate-600 flex items-center gap-2">
+                            <i class="fas fa-history text-slate-400"></i> История закупок
+                        </h3>
+                        <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 font-black uppercase text-slate-400 text-[10px]">
+                                    <tr>
+                                        <th class="p-4">Продукт</th>
+                                        <th class="p-4">Количество</th>
+                                        <th class="p-4 text-right">Сумма</th>
+                                        <th class="p-4 text-center">Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="p in purchases.filter(x => x.status == 'Одобрено' || x.status == 'Запрещено').slice().reverse()">
+                                        <tr class="border-t hover:bg-slate-50 transition-colors">
+                                            <td class="p-4 font-bold" x-text="p.item"></td>
+                                            <td class="p-4 text-slate-500" x-text="p.qty"></td>
+                                            <td class="p-4 text-right font-black text-base" x-text="(p.price || 0) + ' ₽'"></td>
+                                            <td class="p-4 text-center">
+                                                <span :class="p.status == 'Одобрено' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'"
+                                                      class="px-3 py-1 rounded-full text-[10px] font-black uppercase"
+                                                      x-text="p.status"></span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- УВЕДОМЛЕНИЯ -->
+                <div x-show="tab.includes('notif')">
+                    <h2 class="text-2xl font-black mb-6 uppercase">Уведомления</h2>
+                    <div class="space-y-3">
+                        <template x-for="n in filteredNotifications">
+                            <div class="bg-white p-5 rounded-2xl shadow-sm transition-all hover:shadow-md"
+                                 :class="getNotifBorderClass(n)">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                                             :class="getNotifIconBgClass(n)">
+                                            <i class="fas text-white text-sm" :class="getNotifIcon(n)"></i>
+                                        </div>
+                                        <div>
+                                            <span class="font-black text-sm block" x-text="n.title"></span>
+                                            <p class="text-sm text-slate-500 mt-0.5" x-text="n.text"></p>
+                                        </div>
+                                    </div>
+                                    <span class="text-slate-400 text-[10px] font-bold whitespace-nowrap ml-4" x-text="n.time"></span>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="filteredNotifications.length === 0">
+                            <div class="text-center py-16 text-slate-400">
+                                <i class="fas fa-bell text-5xl mb-4 opacity-30"></i>
+                                <p class="font-black uppercase">Пока нет уведомлений</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <footer class="bg-white border-t p-4 px-10 flex justify-between items-center shadow-lg">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-black text-xs uppercase" x-text="user.username[0]"></div>
+                <div>
+                    <p class="font-black text-slate-700 uppercase text-[10px] tracking-widest leading-none" x-text="user.username"></p>
+                    <p class="text-[9px] text-slate-400 font-bold mt-1" x-text="user.school"></p>
+                </div>
+            </div>
+            <div class="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl font-black border border-emerald-100" x-show="user.role == 'student'" x-text="'Баланс: ' + user.balance + ' ₽'"></div>
+        </footer>
+    </div>
+
+    <script>
+        // ===== TOAST СИСТЕМА =====
+        function showToast(type, title, desc, duration = 3000) {
+            const container = document.getElementById('toast-container');
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas ${icons[type] || icons.info} toast-icon"></i>
+                <div class="toast-body">
+                    <div class="toast-title">${title}</div>
+                    ${desc ? '<div class="toast-desc">' + desc + '</div>' : ''}
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 400);
+            }, duration);
+        }
+
+        function canteenApp() {
+            return {
+                user: null, isRegistering: false, showSchoolDropdown: false, adminSecret: '123',
+                filterStatus: 'all', filterMenuCategory: 'all',
+                moscowSchools: ["ГБОУ Школа №656", "ГБОУ Школа №1794", "ГБОУ Школа №1383", "ГБОУ Школа №2100", "ГБОУ Школа №2098", "ГБОУ Школа №1474", "ГБОУ Школа №1590", "ГБОУ Школа №597", "ГБОУ Школа №158"],
+                regData: { username: '', password: '', fullName: '', role: 'student', school: '', grade: '', adminKey: '', phone: '', email: '' },
+                users: [], menu: [], orders: [], ingredients: [], purchases: [], reviews: [], notifications: [], subTransactions: [], subscriptionUsage: [],
+                tab: '', selectedAllergens: [], allergiesText: '', refillAmount: 500, reviewDish: '', reviewText: '', purchaseItem: '', purchaseQty: '', purchasePrice: '',
+                selectedSubType: '', selectedSubDishes: [], useSubLoading: false,
+                newIng: { name: '', unit: '' }, newDish: { name: '', price: '', portions: '', type: 'Второе', category: 'Обед', ingredients: '' },
+                stat_dishRevenue: 0, stat_subRevenue: 0, stat_attendance: 0, stat_purchaseExpense: 0, stat_totalDishes: 0,
+                cardNumber: '', cardHolder: '', cardExpiry: '', cardCVV: '',
+
+                // ===== LOADING STATES =====
+                loginLoading: false,
+                buyingDish: null,          // ID блюда которое покупается
+                confirmingOrder: null,     // ID заказа который подтверждается
+                refillLoading: false,
+                subLoading: null,          // тип абонемента
+                saveCardLoading: false,
+                removeCardLoading: false,
+                profileLoading: false,
+                addDishLoading: false,
+                addIngLoading: false,
+                reviewLoading: false,
+                purchaseLoading: false,
+                approveLoading: null,      // username повара
+                rejectLoading: null,       // username повара
+                approvePurchaseLoading: null, // id закупки
+                rejectPurchaseLoading: null,  // id закупки (запрет)
+                csvLoading: false,
+
+                // ===== КУПЛЕНО / ВЫДАНО ОВЕРЛЕИ =====
+                boughtDishes: {},          // { menuId: true } — показывать "Куплено!"
+                boughtDishesExit: {},      // { menuId: true } — анимация выхода
+                eatenRows: {},             // { orderId: true } — "Я поел(а)" подтверждение
+                eatenRowsExit: {},
+                issuedRows: {},            // { orderId: true } — "Выдано!" для повара
+                issuedRowsExit: {},
+                approvedPurchases: {},     // { purchaseId: true } — "Одобрено!"
+                approvedPurchasesExit: {},
+                rejectedPurchases: {},     // { purchaseId: true } — "Запрещено!"
+                rejectedPurchasesExit: {},
+
+                navItems: {
+                    student: [{id:'st_menu', name:'Меню дня', icon:'fa-utensils'}, {id:'st_subscription', name:'Абонемент', icon:'fa-ticket-alt'}, {id:'st_history', name:'Заказы', icon:'fa-history'}, {id:'st_wallet', name:'Кошелек', icon:'fa-wallet'}, {id:'st_card', name:'Моя карта', icon:'fa-credit-card'}, {id:'st_notif', name:'Уведомления', icon:'fa-bell'}, {id:'st_profile', name:'Аллергии', icon:'fa-user-circle'}, {id:'st_rev', name:'Отзывы', icon:'fa-comment-alt'}],
+                    chef: [{id:'ch_issue', name:'Очередь', icon:'fa-check-double'}, {id:'ch_stock', name:'Склад', icon:'fa-boxes'}, {id:'ch_accounting', name:'Учет', icon:'fa-clipboard-list'}, {id:'ch_buy', name:'Закупки', icon:'fa-truck'}, {id:'ch_notif', name:'Уведомления', icon:'fa-bell'}],
+                    admin: [{id:'ad_stats', name:'Аналитика', icon:'fa-chart-pie'}, {id:'ad_staff', name:'Персонал', icon:'fa-users-cog'}, {id:'ad_report', name:'Отчеты', icon:'fa-table'}, {id:'ad_approve', name:'Заявки', icon:'fa-clipboard-list'}, {id:'ad_notif', name:'Уведомления', icon:'fa-bell'}]
+                },
+
+                get filteredSchools() { return !this.regData.school ? this.moscowSchools : this.moscowSchools.filter(s => s.toLowerCase().includes(this.regData.school.toLowerCase())); },
+                get filteredNotifications() {
+                    if (!this.user) return [];
+                    return this.notifications.filter(n => {
+                        // Уведомление адресовано конкретному пользователю
+                        if (n.toUser && n.toUser === this.user.username) return true;
+                        // Уведомление адресовано роли
+                        if (n.toRole && n.toRole === this.user.role) return true;
+                        return false;
+                    }).reverse();
+                },
+                get filteredOrders() {
+                    if (this.filterStatus === 'all') return this.orders;
+                    return this.orders.filter(o => o.status === this.filterStatus);
+                },
+                get filteredMenu() {
+                    if (this.filterMenuCategory === 'all') return this.menu;
+                    return this.menu.filter(m => (m.category || 'Обед') === this.filterMenuCategory);
+                },
+
+                get hasCard() {
+                    return this.user && this.user.cardNumber && this.user.cardNumber.length > 0;
+                },
+
+                // ===== АБОНЕМЕНТЫ: ХЕЛПЕРЫ =====
+                hasActiveSubscription(type) {
+                    if (!this.user) return false;
+                    return this.subTransactions.some(t => t.user === this.user.username && t.type === type);
+                },
+
+                usedSubscriptionToday(type) {
+                    if (!this.user) return false;
+                    const today = new Date().toISOString().split('T')[0];
+                    return this.subscriptionUsage.some(u =>
+                        u.user === this.user.username &&
+                        u.subType === type &&
+                        u.date === today
+                    );
+                },
+
+                canUseSubscription() {
+                    if (!this.selectedSubType || this.selectedSubDishes.length === 0) return false;
+
+                    if (this.selectedSubType === 'Завтраки') {
+                        // Нужно: 1 блюдо + 1 напиток
+                        const hasDish = this.selectedSubDishes.some(id => {
+                            const m = this.menu.find(dish => dish.id === id);
+                            return m && (m.type === 'Первое' || m.type === 'Второе');
+                        });
+                        const hasDrink = this.selectedSubDishes.some(id => {
+                            const m = this.menu.find(dish => dish.id === id);
+                            return m && m.type === 'Напиток';
+                        });
+                        return hasDish && hasDrink && this.selectedSubDishes.length === 2;
+                    }
+
+                    if (this.selectedSubType === 'Обеды') {
+                        // Нужно: 1 первое + 1 второе + 1 напиток
+                        const hasFirst = this.selectedSubDishes.some(id => {
+                            const m = this.menu.find(dish => dish.id === id);
+                            return m && m.type === 'Первое';
+                        });
+                        const hasSecond = this.selectedSubDishes.some(id => {
+                            const m = this.menu.find(dish => dish.id === id);
+                            return m && m.type === 'Второе';
+                        });
+                        const hasDrink = this.selectedSubDishes.some(id => {
+                            const m = this.menu.find(dish => dish.id === id);
+                            return m && m.type === 'Напиток';
+                        });
+                        return hasFirst && hasSecond && hasDrink && this.selectedSubDishes.length === 3;
+                    }
+
+                    return false;
+                },
+
+                toggleSubDish(dishId, dishType) {
+                    const idx = this.selectedSubDishes.indexOf(dishId);
+
+                    if (idx > -1) {
+                        // Убираем выбор
+                        this.selectedSubDishes.splice(idx, 1);
+                    } else {
+                        // Добавляем выбор с ограничениями
+                        if (this.selectedSubType === 'Завтраки') {
+                            // Только 1 блюдо (первое или второе) + 1 напиток
+                            if (dishType === 'Напиток') {
+                                // Убираем предыдущий напиток
+                                this.selectedSubDishes = this.selectedSubDishes.filter(id => {
+                                    const m = this.menu.find(dish => dish.id === id);
+                                    return m && m.type !== 'Напиток';
+                                });
+                            } else {
+                                // Убираем предыдущее блюдо
+                                this.selectedSubDishes = this.selectedSubDishes.filter(id => {
+                                    const m = this.menu.find(dish => dish.id === id);
+                                    return m && m.type === 'Напиток';
+                                });
+                            }
+                            this.selectedSubDishes.push(dishId);
+                        } else if (this.selectedSubType === 'Обеды') {
+                            // Только 1 первое + 1 второе + 1 напиток
+                            // Убираем предыдущее блюдо того же типа
+                            this.selectedSubDishes = this.selectedSubDishes.filter(id => {
+                                const m = this.menu.find(dish => dish.id === id);
+                                return m && m.type !== dishType;
+                            });
+                            this.selectedSubDishes.push(dishId);
+                        }
+                    }
+                },
+
+                // ===== МАППИНГ АЛЛЕРГЕНОВ =====
+                allergenMapping: {
+                    'лактоза': ['молоко', 'сливки', 'сметана', 'йогурт', 'кефир', 'творог', 'сыр', 'масло сливочное', 'сливочное масло', 'мороженое', 'сгущенка'],
+                    'орехи': ['орех', 'арахис', 'миндаль', 'фундук', 'кешью', 'грецкий орех', 'фисташки', 'кедровые орехи'],
+                    'глютен': ['пшеница', 'мука', 'хлеб', 'макароны', 'булка', 'печенье', 'рожь', 'ячмень', 'овёс', 'манка'],
+                    'яйца': ['яйцо', 'яйца', 'желток', 'белок яичный', 'майонез'],
+                    'цитрус': ['лимон', 'апельсин', 'мандарин', 'грейпфрут', 'лайм', 'цитрус'],
+                    'морепродукты': ['рыба', 'креветки', 'краб', 'кальмар', 'мидии', 'осьминог', 'икра', 'лосось', 'тунец', 'семга']
+                },
+
+                hasAllergen(dish) {
+                    if (!this.user || !this.user.allergies || !dish.ingredients) return false;
+                    return this.getDetectedAllergens(dish).length > 0;
+                },
+
+                getDetectedAllergens(dish) {
+                    if (!this.user || !this.user.allergies || !dish.ingredients) return [];
+                    const userAllergens = this.user.allergies.toLowerCase().split(',').map(a => a.trim()).filter(a => a);
+                    const dishIngredients = dish.ingredients.toLowerCase();
+                    const detected = [];
+                    userAllergens.forEach(allergen => {
+                        if (dishIngredients.includes(allergen)) { detected.push(allergen.toUpperCase()); return; }
+                        const ingredientsList = this.allergenMapping[allergen];
+                        if (ingredientsList) {
+                            const found = ingredientsList.find(ingredient => dishIngredients.includes(ingredient));
+                            if (found) detected.push(allergen.toUpperCase());
+                        }
+                    });
+                    return [...new Set(detected)];
+                },
+
+                getAllergenList(dish) {
+                    return this.getDetectedAllergens(dish).join(', ');
+                },
+
+                // ===== ВСПОМОГАТЕЛЬНЫЙ: показать оверлей на время =====
+                showOverlay(stateObj, exitObj, key, duration = 1800) {
+                    this[stateObj] = { ...this[stateObj], [key]: true };
+                    this[exitObj] = { ...this[exitObj], [key]: false };
+                    setTimeout(() => {
+                        this[exitObj] = { ...this[exitObj], [key]: true };
+                        setTimeout(() => {
+                            this[stateObj] = { ...this[stateObj], [key]: false };
+                            this[exitObj] = { ...this[exitObj], [key]: false };
+                        }, 450);
+                    }, duration);
+                },
+
+                async init() {
+                    await this.sync();
+                    if (this.user) {
+                        const defaultTabs = { student: 'st_menu', chef: 'ch_issue', admin: 'ad_stats' };
+                        this.tab = defaultTabs[this.user.role] || this.navItems[this.user.role][0].id;
+                        this.loadUserAllergens();
+                        this.loadUserCard();
+                    }
+                    setInterval(() => this.sync(), 10000);
+                },
+
+                loadUserAllergens() {
+                    if (!this.user || !this.user.allergies) { this.selectedAllergens = []; this.allergiesText = ''; return; }
+                    const allAllergens = this.user.allergies.split(',').map(a => a.trim()).filter(a => a);
+                    const predefinedList = ['Лактоза', 'Орехи', 'Глютен', 'Яйца', 'Цитрус', 'Морепродукты'];
+                    this.selectedAllergens = [];
+                    const otherAllergens = [];
+                    allAllergens.forEach(allergen => {
+                        const normalized = allergen.charAt(0).toUpperCase() + allergen.slice(1).toLowerCase();
+                        if (predefinedList.includes(normalized)) this.selectedAllergens.push(normalized);
+                        else otherAllergens.push(allergen);
+                    });
+                    this.allergiesText = otherAllergens.join(', ');
+                },
+
+                loadUserCard() {
+                    if (!this.user) return;
+                    this.cardNumber = this.user.cardNumber || '';
+                    this.cardHolder = this.user.cardHolder || '';
+                    this.cardExpiry = this.user.cardExpiry || '';
+                    this.cardCVV = '';
+                },
+
+                async sync() {
+                    try {
+                        const r = await fetch('/api/sync');
+                        const d = await r.json();
+                        this.menu = d.menu;
+                        this.orders = d.orders;
+                        this.ingredients = d.ingredients;
+                        this.users = d.users;
+                        this.reviews = d.reviews;
+                        this.purchases = d.purchases;
+                        this.notifications = d.notifications;
+                        this.subTransactions = d.subTransactions;
+                        this.subscriptionUsage = d.subscriptionUsage;
+                        if(this.user) {
+                            let found = this.users.find(u => u.username === this.user.username);
+                            if(found) {
+                                const oldAllergies = this.user.allergies;
+                                this.user = found;
+                                if (oldAllergies !== this.user.allergies) this.loadUserAllergens();
+                            }
+                        }
+                        this.calculateStats();
+                    } catch (error) {
+                        console.error("[SYNC] Ошибка синхронизации:", error);
+                    }
+                },
+
+                // ===== ВОЙТИ / РЕГИСТРАЦИЯ =====
+                async login() {
+                    if (!this.regData.username || !this.regData.password) {
+                        showToast('warning', 'Внимание', 'Введите логин и пароль');
+                        return;
+                    }
+                    this.loginLoading = true;
+                    try {
+                        const r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:this.regData.username, password:this.regData.password})});
+                        const d = await r.json();
+                        if(d.error) {
+                            showToast('error', 'Ошибка входа', d.error);
+                            this.loginLoading = false;
+                            return;
+                        }
+                        this.user = d;
+                        this.tab = this.navItems[this.user.role][0].id;
+                        this.loadUserAllergens();
+                        this.loadUserCard();
+                        await this.sync();
+                        showToast('success', 'Добро пожаловать!', 'Вы вошли как ' + this.user.fullName);
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Сервер недоступен. Попробуйте позже.');
+                    }
+                    this.loginLoading = false;
+                },
+
+                async register() {
+                    if(this.regData.role === 'admin' && this.regData.adminKey !== this.adminSecret) {
+                        showToast('error', 'Ошибка', 'ROOT-ключ неверный!');
+                        return;
+                    }
+                    if (!this.regData.username || !this.regData.password || !this.regData.fullName) {
+                        showToast('warning', 'Внимание', 'Заполните обязательные поля');
+                        return;
+                    }
+                    this.loginLoading = true;
+                    try {
+                        const r = await fetch('/api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(this.regData)});
+                        const d = await r.json();
+                        if(d.error) {
+                            showToast('error', 'Ошибка регистрации', d.error);
+                            this.loginLoading = false;
+                            return;
+                        }
+                        showToast('success', 'Успешно!', 'Аккаунт создан. Теперь войдёте.');
+                        this.isRegistering = false;
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Сервер недоступен');
+                    }
+                    this.loginLoading = false;
+                },
+
+                // ===== КУПИТЬ БЛЮДО =====
+                async buy(m) {
+                    if(this.user.balance < m.price) {
+                        showToast('error', 'Недостаточно средств', 'Пополните баланс в кошелёке');
+                        return;
+                    }
+                    if(this.hasAllergen(m)) {
+                        const allergensList = this.getDetectedAllergens(m).join(', ');
+                        const confirmed = confirm(
+                            `⚠️ ВНИМАНИЕ! ОПАСНОСТЬ ДЛЯ ЗДОРОВЬЯ!\n\nЭто блюдо содержит аллергены:\n🔴 ${allergensList}\n\nУпотребление может вызвать аллергическую реакцию!\n\nВы уверены, что хотите купить его?`
+                        );
+                        if(!confirmed) return;
+                    }
+
+                    this.buyingDish = m.id;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'buy', user:this.user.username, menuId:m.id, allergies:this.user.allergies})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            // Показываем "Куплено!" оверлей
+                            this.showOverlay('boughtDishes', 'boughtDishesExit', m.id, 1800);
+                            showToast('success', 'Куплено!', m.name + ' — ' + m.price + ' ₽');
+                        } else {
+                            showToast('error', 'Ошибка', d.error || 'Не удалось купить');
+                        }
+                        await this.sync();
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось выполнить покупку');
+                    }
+                    this.buyingDish = null;
+                },
+
+                // ===== "Я поел(а)" — ученик =====
+                async confirmOrderStudent(id) {
+                    this.confirmingOrder = id;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'confirm_order', id:id})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            this.showOverlay('eatenRows', 'eatenRowsExit', id, 1500);
+                            showToast('success', 'Отмечено!', 'Заказ успешно подтвержден');
+                        }
+                        await this.sync();
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось подтвердить');
+                    }
+                    this.confirmingOrder = null;
+                },
+
+                // ===== "Выдать" — повар =====
+                async confirmOrderChef(id) {
+                    this.confirmingOrder = id;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'confirm_order', id:id})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            this.showOverlay('issuedRows', 'issuedRowsExit', id, 1500);
+                            showToast('success', 'Выдано!', 'Заказ №' + id + ' передан ученику');
+                        }
+                        await this.sync();
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось выдать заказ');
+                    }
+                    this.confirmingOrder = null;
+                },
+
+                // ===== АБОНЕМЕНТ =====
+                async buySub(type, price) {
+                    if(this.user.balance < price) {
+                        showToast('error', 'Недостаточно средств', 'Нужно: ' + price + ' ₽, есть: ' + this.user.balance + ' ₽');
+                        return;
+                    }
+                    this.subLoading = type;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'buy_sub', user:this.user.username, subType:type, price:price})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            showToast('success', 'Абонемент куплен!', type + ' — ' + price + ' ₽');
+                        }
+                        await this.sync();
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось купить абонемент');
+                    }
+                    this.subLoading = null;
+                },
+
+                // ===== ИСПОЛЬЗОВАТЬ АБОНЕМЕНТ =====
+                async useSubscription() {
+                    if (!this.canUseSubscription()) {
+                        showToast('warning', 'Внимание', 'Выберите все необходимые блюда');
+                        return;
+                    }
+                    this.useSubLoading = true;
+                    try {
+                        const r = await fetch('/api/action', {
+                            method:'POST',
+                            headers:{'Content-Type':'application/json'},
+                            body:JSON.stringify({
+                                type:'use_subscription',
+                                user: this.user.username,
+                                subType: this.selectedSubType,
+                                dishes: this.selectedSubDishes,
+                                allergies: this.user.allergies
+                            })
+                        });
+                        const d = await r.json();
+                        if (d.error) {
+                            showToast('error', 'Ошибка', d.error);
+                        } else if (d.ok) {
+                            showToast('success', 'Готово!', 'Ваши блюда добавлены в очередь');
+                            this.selectedSubDishes = [];
+                            await this.sync();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось использовать абонемент');
+                    }
+                    this.useSubLoading = false;
+                },
+
+                // ===== ПОПОЛНИТЬ БАЛАНС =====
+                async refill() {
+                    if (!this.hasCard) {
+                        showToast('warning', 'Карта не привязана', 'Сначала привяжите карту во вкладке "Моя карта"');
+                        return;
+                    }
+                    if (!this.refillAmount || this.refillAmount <= 0) {
+                        showToast('warning', 'Внимание', 'Введите корректную сумму');
+                        return;
+                    }
+                    this.refillLoading = true;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'refill', user:this.user.username, amount:parseInt(this.refillAmount)})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            showToast('success', 'Баланс пополнен!', '+' + this.refillAmount + ' ₽');
+                            this.refillAmount = 500;
+                        }
+                        await this.sync();
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось пополнить баланс');
+                    }
+                    this.refillLoading = false;
+                },
+
+                // ===== СОХРАНИТЬ КАРТУ =====
+                async saveCard() {
+                    if (!this.cardNumber || !this.cardHolder || !this.cardExpiry || !this.cardCVV) {
+                        showToast('warning', 'Внимание', 'Заполните все поля карты');
+                        return;
+                    }
+                    const cleanCardNumber = this.cardNumber.replace(/\s/g, '');
+                    if (cleanCardNumber.length !== 16 || !/^\d+$/.test(cleanCardNumber)) {
+                        showToast('error', 'Ошибка', 'Номер карты должен содержать 16 цифр');
+                        return;
+                    }
+                    if (!/^\d{2}\/\d{2}$/.test(this.cardExpiry)) {
+                        showToast('error', 'Ошибка', 'Срок действия должен быть в формате MM/YY');
+                        return;
+                    }
+                    if (this.cardCVV.length !== 3 || !/^\d+$/.test(this.cardCVV)) {
+                        showToast('error', 'Ошибка', 'CVV должен содержать 3 цифры');
+                        return;
+                    }
+
+                    this.saveCardLoading = true;
+                    try {
+                        const r = await fetch('/api/action', {
+                            method:'POST',
+                            headers:{'Content-Type':'application/json'},
+                            body:JSON.stringify({ type:'save_card', user:this.user.username, cardNumber: cleanCardNumber, cardHolder: this.cardHolder, cardExpiry: this.cardExpiry })
+                        });
+                        const d = await r.json();
+                        if (d.ok) {
+                            this.cardCVV = '';
+                            await this.sync();
+                            showToast('success', 'Карта привязана!', '**** **** **** ' + cleanCardNumber.slice(-4));
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось сохранить карту');
+                    }
+                    this.saveCardLoading = false;
+                },
+
+                // ===== УДАЛИТЬ КАРТУ =====
+                async removeCard() {
+                    if (!confirm("Вы уверены, что хотите удалить привязанную карту?")) return;
+                    this.removeCardLoading = true;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'remove_card', user:this.user.username})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            this.cardNumber = ''; this.cardHolder = ''; this.cardExpiry = ''; this.cardCVV = '';
+                            await this.sync();
+                            showToast('success', 'Карта удалена', 'Карта успешно отвязана');
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось удалить карту');
+                    }
+                    this.removeCardLoading = false;
+                },
+
+                formatCardNumber(value) {
+                    const cleaned = value.replace(/\s/g, '');
+                    const chunks = cleaned.match(/.{1,4}/g);
+                    return chunks ? chunks.join(' ') : cleaned;
+                },
+
+                // ===== ОДОБРИТЬ / ОТКЛОНИТЬ ПОВАРА =====
+                async approveChef(un) {
+                    this.approveLoading = un;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'approve_chef', target:un})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            showToast('success', 'Повар одобрен!', un);
+                            await this.sync();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось одобрить');
+                    }
+                    this.approveLoading = null;
+                },
+
+                async rejectChef(un) {
+                    if(!confirm("Удалить заявку повара " + un + "?")) return;
+                    this.rejectLoading = un;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'reject_chef', target:un})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            showToast('success', 'Заявка удалена', 'Повар ' + un + ' удалён');
+                            await this.sync();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось удалить');
+                    }
+                    this.rejectLoading = null;
+                },
+
+                // ===== ОБНОВИТЬ ПОРЦИИ =====
+                async updateStock(m, delta) {
+                    const newPortions = Math.max(0, m.portions + delta);
+                    try {
+                        await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'update_stock', id:m.id, val: newPortions})});
+                        await this.sync();
+                    } catch (e) { showToast('error', 'Ошибка', 'Не удалось обновить'); }
+                },
+
+                // ===== ИНГРЕДИЕНТЫ =====
+                async setIng(i) {
+                    try {
+                        await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'set_ing', id:i.id, val: i.amount})});
+                        await this.sync();
+                    } catch (e) { showToast('error', 'Ошибка', 'Не удалось обновить'); }
+                },
+
+                async addNewIngredient() {
+                    if (!this.newIng.name || !this.newIng.unit) {
+                        showToast('warning', 'Внимание', 'Заполните название и единицу измерения');
+                        return;
+                    }
+                    this.addIngLoading = true;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'add_ing', name:this.newIng.name, unit:this.newIng.unit})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            showToast('success', 'Ингредиент добавлен!', this.newIng.name);
+                            this.newIng = {name:'', unit:''};
+                            await this.sync();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось добавить');
+                    }
+                    this.addIngLoading = false;
+                },
+
+                // ===== ДОБАВИТЬ БЛЮДО =====
+                async addNewDish() {
+                    if(!this.newDish.name || !this.newDish.price) {
+                        showToast('warning', 'Внимание', 'Заполните название и цену');
+                        return;
+                    }
+                    if(!this.newDish.ingredients) {
+                        showToast('warning', 'Внимание', 'Укажите состав блюда');
+                        return;
+                    }
+                    this.addDishLoading = true;
+                    try {
+                        const r = await fetch('/api/action', {
+                            method:'POST',
+                            headers:{'Content-Type':'application/json'},
+                            body:JSON.stringify({
+                                type:'add_menu_item',
+                                name:this.newDish.name,
+                                price:parseFloat(this.newDish.price),
+                                portions:parseInt(this.newDish.portions) || 0,
+                                dishType:this.newDish.type,
+                                category:this.newDish.category,
+                                ingredients:this.newDish.ingredients
+                            })
+                        });
+                        const result = await r.json();
+                        if(result.ok) {
+                            showToast('success', 'Блюдо добавлено!', this.newDish.name + ' — теперь видно всем ученикам');
+                            this.newDish = { name: '', price: '', portions: '', type: 'Второе', category: 'Обед', ingredients: '' };
+                            await this.sync();
+                        } else {
+                            showToast('error', 'Ошибка', result.error || 'Неизвестная ошибка');
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось добавить блюдо');
+                    }
+                    this.addDishLoading = false;
+                },
+
+                // ===== ОТЗЫВ =====
+                async addReview() {
+                    if (!this.reviewDish || !this.reviewText) {
+                        showToast('warning', 'Внимание', 'Выберите блюдо и напишите отзыв');
+                        return;
+                    }
+                    this.reviewLoading = true;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'add_review', dish:this.reviewDish, text:this.reviewText, author:this.user.fullName})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            showToast('success', 'Отзыв отправлен!', 'Спасибо за ваше мнение');
+                            this.reviewText = '';
+                            await this.sync();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось отправить отзыв');
+                    }
+                    this.reviewLoading = false;
+                },
+
+                // ===== ЗАКУПКА =====
+                async addPurchase() {
+                    if (!this.purchaseItem || !this.purchaseQty || !this.purchasePrice) {
+                        showToast('warning', 'Внимание', 'Заполните все поля');
+                        return;
+                    }
+                    this.purchaseLoading = true;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'add_purchase', item:this.purchaseItem, qty:this.purchaseQty, price:parseFloat(this.purchasePrice)})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            showToast('success', 'Заявка создана!', this.purchaseItem + ' — ' + this.purchasePrice + ' ₽');
+                            this.purchaseItem = ''; this.purchaseQty = ''; this.purchasePrice = '';
+                            await this.sync();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось создать заявку');
+                    }
+                    this.purchaseLoading = false;
+                },
+
+                // ===== ОДОБРИТЬ ЗАКУПКУ =====
+                async approvePurchase(p) {
+                    this.approvePurchaseLoading = p.id;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'approve_purchase', id:p.id})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            this.showOverlay('approvedPurchases', 'approvedPurchasesExit', p.id, 1500);
+                            showToast('success', 'Закупка одобрена!', p.item + ' — ' + (p.price || 0) + ' ₽');
+                            await this.sync();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось одобрить');
+                    }
+                    this.approvePurchaseLoading = null;
+                },
+
+                // ===== ЗАПРЕТИТЬ ЗАКУПКУ =====
+                async rejectPurchase(p) {
+                    this.rejectPurchaseLoading = p.id;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'reject_purchase', id:p.id})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            this.showOverlay('rejectedPurchases', 'rejectedPurchasesExit', p.id, 1500);
+                            showToast('warning', 'Закупка запрещена', p.item + ' — заявка отклонена');
+                            await this.sync();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось запретить');
+                    }
+                    this.rejectPurchaseLoading = null;
+                },
+
+                // ===== ПРОФИЛЬ / АЛЛЕРГИИ =====
+                async saveProfile() {
+                    let comb = [...this.selectedAllergens];
+                    if(this.allergiesText.trim()) {
+                        const textAllergens = this.allergiesText.trim().split(',').map(a => a.trim()).filter(a => a);
+                        comb.push(...textAllergens);
+                    }
+                    const allergiesString = comb.join(', ');
+                    this.profileLoading = true;
+                    try {
+                        const r = await fetch('/api/action', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'save_profile', user:this.user.username, allergies:allergiesString})});
+                        const d = await r.json();
+                        if (d.ok) {
+                            showToast('success', 'Настройки сохранены!', 'Аллергены: ' + (allergiesString || 'не указаны'));
+                            await this.sync();
+                        }
+                    } catch (e) {
+                        showToast('error', 'Ошибка', 'Не удалось сохранить');
+                    }
+                    this.profileLoading = false;
+                },
+
+                // ===== СТАТИСТИКА =====
+                calculateStats() {
+                    this.stat_dishRevenue = this.orders.reduce((s,o) => s + (o.status === 'Выдано' ? o.price : 0), 0);
+                    this.stat_subRevenue = this.subTransactions.reduce((s,t) => s + t.amount, 0);
+                    this.stat_purchaseExpense = this.purchases.reduce((s,p) => s + (p.status === 'Одобрено' ? (p.price || 0) : 0), 0);
+                    this.stat_attendance = this.orders.length ? Math.round((this.orders.filter(o => o.status === 'Выдано').length / this.orders.length) * 100) : 0;
+                    this.stat_totalDishes = this.orders.filter(o => o.status === 'Выдано').length;
+                },
+
+                isNewDish(addedDate) {
+                    if (!addedDate) return false;
+                    return (new Date() - new Date(addedDate)) / 3600000 < 24;
+                },
+
+                formatDate(isoDate) {
+                    if (!isoDate) return 'Сегодня';
+                    return new Date(isoDate).toLocaleDateString('ru-RU');
+                },
+
+                getUserClass(username) {
+                    const u = this.users.find(u => u.username === username);
+                    return u ? u.grade + ' кл' : '-';
+                },
+
+                getDishType(name) {
+                    const m = this.menu.find(m => m.name === name);
+                    return m ? m.type : '-';
+                },
+
+                // ===== УВЕДОМЛЕНИЯ: иконки и цвета =====
+                getNotifBorderClass(n) {
+                    const t = (n.title || '').toLowerCase();
+                    if (t.includes('одобрен')) return 'border border-emerald-200 border-l-4 border-l-emerald-500';
+                    if (t.includes('запрещ') || t.includes('отклон')) return 'border border-red-200 border-l-4 border-l-red-500';
+                    if (t.includes('новое') || t.includes('добавлен')) return 'border border-blue-200 border-l-4 border-l-blue-500';
+                    if (t.includes('оплат') || t.includes('купл') || t.includes('баланс')) return 'border border-orange-200 border-l-4 border-l-orange-500';
+                    return 'border border-slate-200 border-l-4 border-l-blue-500';
+                },
+                getNotifIconBgClass(n) {
+                    const t = (n.title || '').toLowerCase();
+                    if (t.includes('одобрен')) return 'bg-emerald-500';
+                    if (t.includes('запрещ') || t.includes('отклон')) return 'bg-red-500';
+                    if (t.includes('новое') || t.includes('добавлен')) return 'bg-blue-500';
+                    if (t.includes('оплат') || t.includes('купл') || t.includes('баланс')) return 'bg-orange-500';
+                    return 'bg-blue-500';
+                },
+                getNotifIcon(n) {
+                    const t = (n.title || '').toLowerCase();
+                    if (t.includes('одобрен')) return 'fa-check-circle';
+                    if (t.includes('запрещ') || t.includes('отклон')) return 'fa-ban';
+                    if (t.includes('новое') || t.includes('добавлен')) return 'fa-utensils';
+                    if (t.includes('оплат') || t.includes('купл') || t.includes('баланс')) return 'fa-wallet';
+                    return 'fa-bell';
+                },
+
+                // ===== СКАЧАТЬ CSV =====
+                downloadCSVReport() {
+                    this.csvLoading = true;
+                    setTimeout(() => {
+                        const totalIncome = this.stat_dishRevenue + this.stat_subRevenue;
+                        const totalExpense = this.stat_purchaseExpense;
+                        const profit = totalIncome - totalExpense;
+
+                        let csv = "ФИНАНСОВЫЙ ОТЧЁТ СТОЛОВОЙ\n";
+                        csv += "Дата создания;" + new Date().toLocaleDateString('ru-RU') + "\n\n";
+                        csv += "ФИНАНСОВАЯ СВОДКА\n";
+                        csv += "Показатель;Значение\n";
+                        csv += "Получено (всего);" + totalIncome + " ₽\n";
+                        csv += "Затрачено на закупки;" + totalExpense + " ₽\n";
+                        csv += "Чистая прибыль;" + profit + " ₽\n";
+                        csv += "Блюд продано (шт);" + this.stat_totalDishes + "\n";
+                        csv += "Посещаемость (%);" + this.stat_attendance + "%\n\n";
+
+                        csv += "ИСТОЧНИКИ ДОХОДА\n";
+                        csv += "Источник;Сумма\n";
+                        csv += "Продажа блюд;" + this.stat_dishRevenue + " ₽\n";
+                        csv += "Абонементы;" + this.stat_subRevenue + " ₽\n";
+                        csv += "ИТОГО ДОХОД;" + totalIncome + " ₽\n\n";
+
+                        csv += "РАСХОДЫ\n";
+                        csv += "Категория;Сумма\n";
+                        csv += "Закупка продуктов;" + totalExpense + " ₽\n";
+                        csv += "Одобрено заявок (шт);" + this.purchases.filter(p => p.status === 'Одобрено').length + "\n\n";
+
+                        csv += "ДЕТАЛИЗАЦИЯ ЗАКАЗОВ\n";
+                        csv += "Дата;Ученик;Класс;Блюдо;Цена;Статус\n";
+                        csv += this.orders.map(o => {
+                            const user = this.users.find(u => u.username === o.user);
+                            const grade = user ? user.grade : '-';
+                            return `${this.formatDate(o.createdAt)};${o.user};${grade};${o.name};${o.price};${o.status}`;
+                        }).join("\n");
+
+                        csv += "\n\n";
+                        csv += "СТАТИСТИКА ПО СТАТУСАМ\n";
+                        csv += "Статус;Количество;Сумма\n";
+                        const issued = this.orders.filter(o => o.status === 'Выдано');
+                        const paid = this.orders.filter(o => o.status === 'Оплачено');
+                        csv += "Выдано;" + issued.length + ";" + issued.reduce((s, o) => s + o.price, 0) + " ₽\n";
+                        csv += "Ожидает выдачи;" + paid.length + ";" + paid.reduce((s, o) => s + o.price, 0) + " ₽\n";
+                        csv += "ВСЕГО;" + this.orders.length + ";" + this.orders.reduce((s, o) => s + o.price, 0) + " ₽\n";
+
+                        const date = new Date().toLocaleDateString('ru-RU').replace(/\./g, '-');
+                        const link = document.createElement("a");
+                        link.setAttribute("href", "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv));
+                        link.setAttribute("download", `Финансовый_отчет_${date}.csv`);
+                        link.click();
+
+                        showToast('success', 'Отчёт скачан!', `Финансовый_отчет_${date}.csv`);
+                        this.csvLoading = false;
+                    }, 600); // маленькая задержка чтобы spinner показался
+                },
+
+                logout() {
+                    this.user = null;
+                    showToast('info', 'Вы вышли', 'До свидания!');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
